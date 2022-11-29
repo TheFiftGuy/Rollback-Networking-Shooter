@@ -3,6 +3,16 @@
 	"EngineAssociation": "{4EE716CE-48E7-DE6F-287D-558290FB9350}",
 	"Category": "",
 	"Description": "",
+	"Modules": [
+		{
+			"Name": "ServerRollback",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [
+				"Engine"
+			]
+		}
+	],
 	"Plugins": [
 		{
 			"Name": "ModelingToolsEditorMode",
