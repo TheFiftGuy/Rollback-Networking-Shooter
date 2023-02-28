@@ -1,0 +1,78 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\b3CpuRigidBodyPipeline.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3FixedConstraint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3Generic6DofConstraint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3PgsJacobiSolver.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3Point2PointConstraint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3TypedConstraint.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\b3CpuRigidBodyPipeline.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3ContactSolverInfo.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3FixedConstraint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3Generic6DofConstraint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3JacobianEntry.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3PgsJacobiSolver.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3Point2PointConstraint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3SolverBody.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3SolverConstraint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\ConstraintSolver\b3TypedConstraint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\shared\b3ContactConstraint4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\shared\b3ConvertConstraint4.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\shared\b3Inertia.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\shared\b3IntegrateTransforms.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="E:\HONS code\Bullet\bullet3-3.25\src\Bullet3Dynamics\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{A0119B3A-9D79-30BB-8F7D-FB214F8DE75E}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files">
+      <UniqueIdentifier>{80E2B1A8-1642-311A-9B28-D41E6BC8570B}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>
