@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "BulletMinimal.h"
 #include "PhysTestor.generated.h"
 
 UCLASS()
