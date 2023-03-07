@@ -27,10 +27,22 @@ APhysicsWorldActor::APhysicsWorldActor()
 	// Gravity vector in our units (1=1cm)
 	BtWorld->setGravity(BulletHelpers::ToBtDir(FVector(0, 0, -980)));
 
+
+}
+
+// Called when the game starts or when spawned
+void APhysicsWorldActor::BeginPlay()
+{
+	Super::BeginPlay();
 	//D option section to enable debug draw mode
 	// set up debug rendering
 	BtDebugDraw = new BulletDebugDraw(GetWorld(), GetActorLocation());
 	BtWorld->setDebugDrawer(BtDebugDraw);
+	BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+
+	SetupStaticGeometryPhysics(PhysicsStaticActors1, PhysicsStatic1Friction, PhysicsStatic1Restitution);
+
+	SetupInitialDynamicPhysics(PhysicsDynamicActors);
 }
 
 void APhysicsWorldActor::BeginDestroy()
@@ -95,15 +107,6 @@ void APhysicsWorldActor::BeginDestroy()
 	BtRigidBodies.Empty();
 }
 
-
-
-// Called when the game starts or when spawned
-void APhysicsWorldActor::BeginPlay()
-{
-	Super::BeginPlay();
-	
-}
-
 // Called every frame
 void APhysicsWorldActor::Tick(float DeltaTime)
 {
@@ -117,7 +120,12 @@ void APhysicsWorldActor::StepPhysics(float DeltaSeconds)
 
 #if WITH_EDITORONLY_DATA
 	if (bPhysicsShowDebug)
+	{
 		BtWorld->debugDrawWorld();
+		//BtDebugDraw->drawLine(btVector3(0.0, 0.0, 0.0), btVector3(100.0f, 100.0f, 100.0f), btVector3(255,0,0));
+
+		//DrawDebugSphere(GetWorld(), BulletHelpers::ToUEPos(BtRigidBodies.Last()->getWorldTransform().getOrigin(), GetActorLocation()), 50.0f, 4, FColor::Red, false, 1, 0, 2);
+	}
 #endif
 	
 }
@@ -130,15 +138,44 @@ void APhysicsWorldActor::SetupStaticGeometryPhysics(TArray<AActor*> Actors, floa
 		if (Actor == nullptr)
 			continue;
 
-		ExtractPhysicsGeometry(Actor,
-			[Actor, this, Friction, Restitution](btCollisionShape* Shape, const FTransform& RelTransform)
+		ExtractPhysicsGeometry(Actor, [Actor, this, Friction, Restitution](btCollisionShape* Shape, const FTransform& RelTransform)
 			{
 				// Every sub-collider in the actor is passed to this callback function
 				// We're baking this in world space, so apply actor transform to relative
 				const FTransform FinalXform = RelTransform * Actor->GetActorTransform();
 				AddStaticCollision(Shape, FinalXform, Friction, Restitution, Actor);
 			});
+		UE_LOG(LogTemp, Warning, TEXT("Static Actor: %s was added. Shape is %hs"), *Actor->GetName(), BtStaticObjects.Last()->getCollisionShape()->getName());
 	}
+}
+
+void APhysicsWorldActor::SetupInitialDynamicPhysics(TArray<AActor*> Actors)
+{
+	for (AActor* Actor : Actors)
+	{
+		// Just in case we remove items from the list & leave blank
+		if (Actor == nullptr)
+			continue;
+		
+		const UPrimitiveComponent* Component = Actor->FindComponentByClass<UPrimitiveComponent>();
+		if(Component != nullptr)
+		{
+			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, Component->GetMass()));
+			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Actor->GetName(), Component->GetMass(), *Component->GetName());
+			//BtDebugDraw->drawSphere(BulletHelpers::ToBtSize(Component->GetComponentScale().X), BulletHelpers::ToBt(Actor->GetActorTransform(), GetActorLocation()), btVector3(1,0,0));
+			
+			//BtDebugDraw->drawLine(BulletHelpers::ToBtPos((Actor->GetActorLocation() - Component->GetLocalBounds().SphereRadius), GetActorLocation()), BulletHelpers::ToBtPos((Actor->GetActorLocation() + Component->GetLocalBounds().SphereRadius), GetActorLocation()), btVector3(1,0,0));
+			//DrawDebugSphere(GetWorld(), BulletHelpers::ToUEPos(BtRigidBodies.Last()->getWorldTransform().getOrigin(), GetActorLocation()), 50.0f, 12, FColor::Red, true, 300, 0, 5);
+			//DebugDraw->drawLine(btVector3(0.0, 0.0, 0.0), btVector3(100.0f, 100.0f, 100.0f), btVector3(255,0,0));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Actor: %s has no UPrimitiveComponent, using default mass of 100"), *Actor->GetName());
+			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, 100));
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Initial Dynamic Actor: %s was added"), *Actor->GetName());
+	}
+	
 }
 
 btCollisionObject* APhysicsWorldActor::AddStaticCollision(btCollisionShape* Shape, const FTransform& Transform, float Friction, float Restitution, AActor* Actor)
@@ -344,7 +381,6 @@ btCollisionShape* APhysicsWorldActor::GetConvexHullCollisionShape(UBodySetup* Bo
 	C->setMargin(0);
 	// Apparently this is good to call?
 	C->initializePolyhedralFeatures();
-
 	BtConvexHullCollisionShapes.Add({
         BodySetup,
 		ConvexIndex,
@@ -414,12 +450,12 @@ const APhysicsWorldActor::CachedDynamicShapeData& APhysicsWorldActor::GetCachedD
 	
 }
 
-btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, const CachedDynamicShapeData& ShapeData, float Friction, float Restitution)
+btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, const CachedDynamicShapeData& ShapeData)
 {
-	return AddRigidBody(Actor, ShapeData.Shape, ShapeData.Inertia, ShapeData.Mass, Friction, Restitution);
+	return AddRigidBody(Actor, ShapeData.Shape, ShapeData.Inertia, ShapeData.Mass);
 }
 
-btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, btCollisionShape* CollisionShape, btVector3 Inertia, float Mass, float Friction, float Restitution)
+btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, btCollisionShape* CollisionShape, btVector3 Inertia, float Mass)
 {
 	
 	auto Origin = GetActorLocation();

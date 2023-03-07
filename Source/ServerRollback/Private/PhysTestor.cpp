@@ -18,8 +18,9 @@ APhysTestor::APhysTestor()
 	SceneComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 	//SetRootComponent(SceneComponent);
 	
-	TestComponent = CreateDefaultSubobject <UTestStaticMeshComponent>(TEXT("Sphere"));
+	TestComponent = CreateDefaultSubobject <UTestStaticMeshComponent>(TEXT("TestStaticMeshComponent"));
 	TestComponent->SetStaticMesh(SphereMesh.Object);
+	TestComponent->SetMassOverrideInKg(NAME_None, 100.0f, true);
 	//const FAttachmentTransformRules Attachment = FAttachmentTransformRules( EAttachmentRule::KeepRelative, true );
 
 	
@@ -41,14 +42,14 @@ void APhysTestor::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	
-	ElapsedTime += DeltaTime;
+	/*ElapsedTime += DeltaTime;
 	ElapsedTicks++;
 	UE_LOG(LogTemp, Warning, TEXT("Acto: Pos %s, Time %f, and TickNum %d"), *GetActorTransform().GetLocation().ToString(), ElapsedTime, ElapsedTicks);
 
 	if(ElapsedTicks >= 300)
 	{
 		UKismetSystemLibrary::QuitGame(GetWorld(), 0, EQuitPreference::Quit, false);
-	}
+	}*/
 
 }
 

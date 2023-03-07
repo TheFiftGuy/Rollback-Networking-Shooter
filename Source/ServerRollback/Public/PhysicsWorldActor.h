@@ -8,6 +8,7 @@
 #include "BulletMinimal.h"
 #include "PhysicsWorldActor.generated.h"
 
+class BulletDebugDraw;
 //Class originates from https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
 UCLASS()
 class SERVERROLLBACK_API APhysicsWorldActor : public AActor
@@ -38,13 +39,16 @@ public:
 	float PhysicsStatic1Friction = 0.6;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Bullet Physics|Objects")
 	float PhysicsStatic1Restitution = 0.3;
-	// I chose not to use spinning / rolling friction in the end since it had issues!
+
+	//D I added this
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Objects")
+	TArray<AActor*> PhysicsDynamicActors;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Debug")
 	bool bPhysicsShowDebug = false;
 private:
 	//D current defaults are the bullet ones, will likely need to change BtMaxSubSteps to > 1
-	int BtMaxSubSteps = 1;
+	int BtMaxSubSteps = 3;
 	double BtPhysicsFrequency = 60.0;
 	
 	void StepPhysics(float DeltaSeconds);
@@ -59,7 +63,7 @@ private:
 	btConstraintSolver* BtConstraintSolver;
 	btDynamicsWorld* BtWorld;
 	// Custom debug interface
-	btIDebugDraw* BtDebugDraw;
+	BulletDebugDraw* BtDebugDraw;
 	// Dynamic bodies
 	TArray<btRigidBody*> BtRigidBodies;
 	// Static colliders
@@ -94,6 +98,10 @@ private:
 	//D Static Collision section
 	void SetupStaticGeometryPhysics(TArray<AActor*> Actors, float Friction, float Restitution);
 
+	//D I added
+	void SetupInitialDynamicPhysics(TArray<AActor*> Actors);
+
+
 	btCollisionObject* AddStaticCollision(btCollisionShape* Shape, const FTransform& Transform, float Friction, float Restitution, AActor* Actor);
 
 	typedef const std::function<void (btCollisionShape* /*SingleShape*/, const FTransform& /*RelativeXform*/)>& PhysicsGeometryCallback;
@@ -112,8 +120,8 @@ private:
 	//D Dynamic collision
 	const CachedDynamicShapeData& GetCachedDynamicShapeData(AActor* Actor, float Mass);
 
-	btRigidBody* AddRigidBody(AActor* Actor, const CachedDynamicShapeData& ShapeData, float Friction, float Restitution);
-	btRigidBody* AddRigidBody(AActor* Actor, btCollisionShape* CollisionShape, btVector3 Inertia, float Mass, float Friction, float Restitution);
+	btRigidBody* AddRigidBody(AActor* Actor, const CachedDynamicShapeData& ShapeData);
+	btRigidBody* AddRigidBody(AActor* Actor, btCollisionShape* CollisionShape, btVector3 Inertia, float Mass);
 
 	
 };
