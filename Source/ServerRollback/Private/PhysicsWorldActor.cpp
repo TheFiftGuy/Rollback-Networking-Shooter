@@ -162,11 +162,6 @@ void APhysicsWorldActor::SetupInitialDynamicPhysics(TArray<AActor*> Actors)
 		{
 			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, Component->GetMass()));
 			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Actor->GetName(), Component->GetMass(), *Component->GetName());
-			//BtDebugDraw->drawSphere(BulletHelpers::ToBtSize(Component->GetComponentScale().X), BulletHelpers::ToBt(Actor->GetActorTransform(), GetActorLocation()), btVector3(1,0,0));
-			
-			//BtDebugDraw->drawLine(BulletHelpers::ToBtPos((Actor->GetActorLocation() - Component->GetLocalBounds().SphereRadius), GetActorLocation()), BulletHelpers::ToBtPos((Actor->GetActorLocation() + Component->GetLocalBounds().SphereRadius), GetActorLocation()), btVector3(1,0,0));
-			//DrawDebugSphere(GetWorld(), BulletHelpers::ToUEPos(BtRigidBodies.Last()->getWorldTransform().getOrigin(), GetActorLocation()), 50.0f, 12, FColor::Red, true, 300, 0, 5);
-			//DebugDraw->drawLine(btVector3(0.0, 0.0, 0.0), btVector3(100.0f, 100.0f, 100.0f), btVector3(255,0,0));
 		}
 		else
 		{
@@ -218,9 +213,22 @@ void APhysicsWorldActor::ExtractPhysicsGeometry(UStaticMeshComponent* SMC, const
 	if (!Mesh)
 		return;
 
-	// We want the complete transform from actor to this component, not just relative to parent
-	FTransform CompFullRelXForm =  SMC->GetComponentTransform() * InvActorXform;
-	ExtractPhysicsGeometry(CompFullRelXForm, Mesh->GetBodySetup(), CB);
+	//D if component is part of an actor, get its actor+component transform
+	if(SMC != SMC->GetAttachmentRoot())
+	{
+		// We want the complete transform from actor to this component, not just relative to parent
+		FTransform CompFullRelXForm =  SMC->GetComponentTransform() * InvActorXform;
+		ExtractPhysicsGeometry(CompFullRelXForm, Mesh->GetBodySetup(), CB);
+	}
+	//D if component is THE root/actor, get its transform directly and re-scale it (since scale gets negated otherwise)
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Component: %s is root"), *SMC->GetName());
+		FTransform CompFullRelXForm =  SMC->GetComponentTransform() * InvActorXform;
+		CompFullRelXForm.SetScale3D(SMC->GetComponentScale());//D re-scale it
+		ExtractPhysicsGeometry(CompFullRelXForm, Mesh->GetBodySetup(), CB);
+	}
+	
 
 	// Not supporting complex collision shapes right now
 	// If we did, note that Mesh->ComplexCollisionMesh is WITH_EDITORONLY_DATA so not available at runtime
@@ -243,6 +251,8 @@ void APhysicsWorldActor::ExtractPhysicsGeometry(const FTransform& XformSoFar, UB
 {
 	FVector Scale = XformSoFar.GetScale3D();
 	btCollisionShape* Shape = nullptr;
+
+	UE_LOG(LogTemp, Warning, TEXT("Scale: %s"), *Scale.ToString());
 
 	// Iterate over the simple collision shapes
 	for (auto && Box : BodySetup->AggGeom.BoxElems)
@@ -363,6 +373,9 @@ btCollisionShape* APhysicsWorldActor::GetCapsuleCollisionShape(float Radius, flo
 btCollisionShape* APhysicsWorldActor::GetConvexHullCollisionShape(UBodySetup* BodySetup, int ConvexIndex, const FVector& Scale)
 {
 	//D added Bt to start of name ConvexHullCollisionShapes
+	UE_LOG(LogTemp, Warning, TEXT("Scale: %s"), *Scale.ToString());
+
+	
 	for (auto && S : BtConvexHullCollisionShapes)
 	{
 		if (S.BodySetup == BodySetup && S.HullIndex == ConvexIndex && S.Scale.Equals(Scale))
@@ -373,6 +386,9 @@ btCollisionShape* APhysicsWorldActor::GetConvexHullCollisionShape(UBodySetup* Bo
 	
 	const FKConvexElem& Elem = BodySetup->AggGeom.ConvexElems[ConvexIndex];
 	auto C = new btConvexHullShape();
+	//D fixed component scale not being applied to Convex shapes
+	C->setLocalScaling(btVector3(Scale.X,Scale.Y,Scale.Z));
+	
 	for (auto && P : Elem.VertexData)
 	{
 		C->addPoint(BulletHelpers::ToBtPos(P, FVector::ZeroVector));
@@ -381,6 +397,8 @@ btCollisionShape* APhysicsWorldActor::GetConvexHullCollisionShape(UBodySetup* Bo
 	C->setMargin(0);
 	// Apparently this is good to call?
 	C->initializePolyhedralFeatures();
+	
+	
 	BtConvexHullCollisionShapes.Add({
         BodySetup,
 		ConvexIndex,
