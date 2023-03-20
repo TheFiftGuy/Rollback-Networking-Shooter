@@ -76,3 +76,6 @@ DerivedDataCache/*
 #RiderLink Plugin files to ignore
 Plugins/Developer/RiderLink/Binaries
 Plugins/Developer/RiderLink/Intermediate
+
+#GGPOUE4 Plugin ingore
+Plugins/GGPOUE4/doc/
