@@ -9,7 +9,7 @@
 #include "PhysicsWorldActor.generated.h"
 
 class BulletDebugDraw;
-//Class originates from https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
+//Class is sourced from (link), I have extended the functionality. https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
 UCLASS()
 class SERVERROLLBACK_API APhysicsWorldActor : public AActor
 {
@@ -29,6 +29,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	void UpdatePlayerPhysics(APawn* Pawn);
+
 	//D Static Actor Properties section
 	
 	// This list can be edited in the level, linking to placed static actors
@@ -43,6 +45,9 @@ public:
 	//D I added this
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Objects")
 	TArray<AActor*> PhysicsDynamicActors;
+	//D
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Objects")
+	TArray<APawn*> PhysicsPlayers;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Debug")
 	bool bPhysicsShowDebug = false;
@@ -101,6 +106,9 @@ private:
 	//D I added
 	void SetupInitialDynamicPhysics(TArray<AActor*> Actors);
 
+	//D
+	void SetupPlayerPhysics(TArray<APawn*> Pawns);
+
 
 	btCollisionObject* AddStaticCollision(btCollisionShape* Shape, const FTransform& Transform, float Friction, float Restitution, AActor* Actor);
 
@@ -122,6 +130,7 @@ private:
 
 	btRigidBody* AddRigidBody(AActor* Actor, const CachedDynamicShapeData& ShapeData);
 	btRigidBody* AddRigidBody(AActor* Actor, btCollisionShape* CollisionShape, btVector3 Inertia, float Mass);
-
+	//D
+	btRigidBody* AddPlayerBody(APawn* Pawn, const CachedDynamicShapeData& ShapeData);
 	
 };

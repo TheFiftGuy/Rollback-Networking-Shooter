@@ -43,6 +43,7 @@ void APhysicsWorldActor::BeginPlay()
 	SetupStaticGeometryPhysics(PhysicsStaticActors1, PhysicsStatic1Friction, PhysicsStatic1Restitution);
 
 	SetupInitialDynamicPhysics(PhysicsDynamicActors);
+	SetupPlayerPhysics(PhysicsPlayers);
 }
 
 void APhysicsWorldActor::BeginDestroy()
@@ -114,6 +115,24 @@ void APhysicsWorldActor::Tick(float DeltaTime)
 	StepPhysics(DeltaTime);
 }
 
+void APhysicsWorldActor::UpdatePlayerPhysics(APawn* Pawn)
+{
+	FVector InputVec = Pawn->ConsumeMovementInputVector();
+
+	for(btRigidBody* Body : BtRigidBodies)
+	{
+		if(Pawn == Body->getUserPointer())
+		{
+			/*Body->setCollisionFlags(Body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
+			Body->setActivationState(DISABLE_DEACTIVATION);*/
+			Body->applyCentralImpulse(BulletHelpers::ToBtDir(InputVec * 10.f, false));
+			if(GEngine)
+				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("applied force to player"));
+		}
+	}
+	
+}
+
 void APhysicsWorldActor::StepPhysics(float DeltaSeconds)
 {
 	BtWorld->stepSimulation(DeltaSeconds, BtMaxSubSteps, 1./BtPhysicsFrequency);
@@ -160,15 +179,39 @@ void APhysicsWorldActor::SetupInitialDynamicPhysics(TArray<AActor*> Actors)
 		const UPrimitiveComponent* Component = Actor->FindComponentByClass<UPrimitiveComponent>();
 		if(Component != nullptr)
 		{
-			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, Component->GetMass()));
-			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Actor->GetName(), Component->GetMass(), *Component->GetName());
+			/*AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, Component->GetMass()));
+			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Actor->GetName(), Component->GetMass(), *Component->GetName());*/
+			
+			//D Using default mass for now, to avoid warning message
+			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, 100.f));
+			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Actor->GetName(), 100.f, *Component->GetName());
+		
 		}
 		else
 		{
 			UE_LOG(LogTemp, Error, TEXT("Actor: %s has no UPrimitiveComponent, using default mass of 100"), *Actor->GetName());
-			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, 100));
+			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, 100.f));
 		}
 		UE_LOG(LogTemp, Warning, TEXT("Initial Dynamic Actor: %s was added"), *Actor->GetName());
+	}
+	
+}
+
+void APhysicsWorldActor::SetupPlayerPhysics(TArray<APawn*> Pawns)
+{
+	for (APawn* Pawn : Pawns)
+	{
+		// Just in case we remove items from the list & leave blank
+		if (Pawn == nullptr)
+			continue;
+		
+		const UPrimitiveComponent* Component = Pawn->FindComponentByClass<UPrimitiveComponent>();
+		if(Component != nullptr)
+		{
+			AddPlayerBody(Pawn, GetCachedDynamicShapeData(Pawn, 100));
+			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Pawn->GetName(), 100.f, *Component->GetName());
+		}
+		UE_LOG(LogTemp, Warning, TEXT("Initial Dynamic Actor: %s was added"), *Pawn->GetName());
 	}
 	
 }
@@ -475,7 +518,6 @@ btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, const CachedDynamic
 
 btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, btCollisionShape* CollisionShape, btVector3 Inertia, float Mass)
 {
-	
 	auto Origin = GetActorLocation();
 	auto MotionState = new BulletCustomMotionState(Actor, Origin);
 	const btRigidBody::btRigidBodyConstructionInfo rbInfo(Mass, MotionState, CollisionShape, Inertia);
@@ -485,5 +527,25 @@ btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, btCollisionShape* C
 	BtRigidBodies.Add(Body);
 
 	return Body;
+}
+
+btRigidBody* APhysicsWorldActor::AddPlayerBody(APawn* Pawn, const CachedDynamicShapeData& ShapeData)
+{
+	auto Origin = GetActorLocation();
+	auto MotionState = new BulletCustomMotionState(Pawn, Origin);
+	const btRigidBody::btRigidBodyConstructionInfo rbInfo(ShapeData.Mass, MotionState, ShapeData.Shape, ShapeData.Inertia);
+	btRigidBody* Body = new btRigidBody(rbInfo);
+
+	//D
+	//btTypedConstraint Constraint = btTypedConstraint(btTypedConstraintType::)
+	//Body->addConstraintRef()
+	Body->setAngularFactor(0.f);
+
+
 	
+	Body->setUserPointer(Pawn);
+	BtWorld->addRigidBody(Body);
+	BtRigidBodies.Add(Body);
+
+	return Body;
 }
