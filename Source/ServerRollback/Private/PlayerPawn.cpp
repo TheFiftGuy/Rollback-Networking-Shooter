@@ -61,16 +61,45 @@ void APlayerPawn::BeginPlay()
 void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	//If there is movement to do
-	//if(!GetPendingMovementInputVector().IsZero())
-	{
-		//BulletWorldActor->UpdatePlayerPhysics(this);
-	}
-	FVector InputVec = ConsumeMovementInputVector();
-	//BulletWorldActor->GetBtWorld()->sim
-	PlayerBody->setLinearVelocity(BulletHelpers::ToBtDir(InputVec * 10.f, false));
-	
 
+	//Rotate character's Pitch (left right)
+	FRotator InputRot = GetControlRotation();
+	InputRot.Pitch = 0; InputRot.Roll = 0;
+	btQuaternion BodyRot = BulletHelpers::ToBt(InputRot);
+	PlayerBody->getWorldTransform().setRotation(BodyRot);//unsure if this way or motionState() way is deterministic.
+
+	//move player
+	FVector InputVec = ConsumeMovementInputVector();
+	InputVec.Normalize(1);
+	btVector3 BodyVel =	BulletHelpers::ToBtDir(InputVec * MaxWalkSpeed, false);
+
+	IsGrounded();
+	//if jump input
+	if(InputVec.Z > 0)
+	{
+		//apply vertical impulse
+		BodyVel.setZ(BulletHelpers::ToBtDir(FVector(0.f, 0.f, JumpForce)).getZ());
+		bInAir = true;
+		PlayerBody->setGravity(BulletWorldActor->GetBtWorld()->getGravity());
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Jump Force applied"));
+	}
+	//if grounded but not jumping. (this prevents sliding down small inclines)
+	else if(!bInAir && PlayerBody->getLinearVelocity().getZ() <= 0)
+	{
+		BodyVel.setZ(0);
+		PlayerBody->setGravity(btVector3());
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, TEXT("Standing"));
+	}
+	//if mid-air
+	else
+	{
+		//keep current momentum
+		PlayerBody->setGravity(BulletWorldActor->GetBtWorld()->getGravity());
+		BodyVel.setZ(PlayerBody->getLinearVelocity().getZ());
+		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Momentum"));
+	}
+	
+	PlayerBody->setLinearVelocity(BodyVel);
 }
 
 // Called to bind functionality to input
@@ -92,7 +121,7 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerPawn::Look);
 
 		//jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerPawn::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APlayerPawn::Jump);
 
 	}
 }
@@ -125,33 +154,42 @@ void APlayerPawn::Look(const FInputActionValue& Value)
 
 void APlayerPawn::Jump(const FInputActionValue& Value)
 {
-	btTransform btPlayerTransform;
-	PlayerBody->getMotionState()->getWorldTransform(btPlayerTransform);
-	
-	btVector3 From = btPlayerTransform.getOrigin();
-	btVector3 Offset = btVector3(0.f, 0.f, -0.96);
-	btVector3 To = From + Offset;
-	
-	btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
-	BulletWorldActor->GetBtWorld()->rayTest(btPlayerTransform.getOrigin(), To, rayCallback);
-
 	//if standing on something
-	if(rayCallback.hasHit())
+	if(IsGrounded())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Jump raycast hit: %hs"), rayCallback.m_collisionObject->getCollisionShape()->getName());
 		//input is a bool
 		const bool bJumpInput = Value.Get<bool>();
 		if (Controller != nullptr)
 		{
+			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Jumped"));
 			AddMovementInput(GetActorUpVector(), bJumpInput);
-			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, TEXT("Player Jumped"));
+			bInAir = true;
 		}
 	}
-	//if in-air
-	else
-	{
-		AddMovementInput(GetActorUpVector(), false);
-	}
+	bInAir = true;
+}
 
+bool APlayerPawn::IsGrounded()
+{
+	btTransform btPlayerTransform;
+	PlayerBody->getMotionState()->getWorldTransform(btPlayerTransform);
+	
+	btVector3 From = btPlayerTransform.getOrigin();
+	btVector3 Offset = btVector3(0.f, 0.f, - (0.96 + 0.25));
+	btVector3 To = From + Offset;
+	
+	btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
+	BulletWorldActor->GetBtWorld()->rayTest(btPlayerTransform.getOrigin(), To, rayCallback);
+	
+	//if standing on something
+	if(rayCallback.hasHit())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Jump raycast hit: %hs"), rayCallback.m_collisionObject->getCollisionShape()->getName());
+		bInAir = false;
+		return true;
+	}
+	//if mid-air
+	bInAir = true;
+	return false;
 }
 

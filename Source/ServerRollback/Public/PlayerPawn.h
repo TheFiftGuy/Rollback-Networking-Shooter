@@ -36,9 +36,12 @@ public:
 	UPROPERTY(Category=Character, EditDefaultsOnly)
 	int MaxWalkSpeed = 10;
 	
-private:
-	//Components
+	UPROPERTY(Category=Character, EditDefaultsOnly)
+	int JumpForce = 750;
 	
+private:
+	bool bInAir;
+	//Components
 	UPROPERTY(Category=Character, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
 	
@@ -85,4 +88,5 @@ protected:
 	/** Called for jumping input */
 	void Jump(const FInputActionValue& Value);
 
+	bool IsGrounded();
 };
