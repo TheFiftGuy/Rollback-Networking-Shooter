@@ -43,7 +43,7 @@ void APhysicsWorldActor::BeginPlay()
 	SetupStaticGeometryPhysics(PhysicsStaticActors1, PhysicsStatic1Friction, PhysicsStatic1Restitution);
 
 	SetupInitialDynamicPhysics(PhysicsDynamicActors);
-	SetupPlayerPhysics(PhysicsPlayers);
+
 }
 
 void APhysicsWorldActor::BeginDestroy()
@@ -125,7 +125,8 @@ void APhysicsWorldActor::UpdatePlayerPhysics(APawn* Pawn)
 		{
 			/*Body->setCollisionFlags(Body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
 			Body->setActivationState(DISABLE_DEACTIVATION);*/
-			Body->applyCentralImpulse(BulletHelpers::ToBtDir(InputVec * 10.f, false));
+			//Body->applyCentralImpulse(BulletHelpers::ToBtDir(InputVec * 10.f, false));
+			Body->setLinearVelocity(BulletHelpers::ToBtDir(InputVec * 10.f, false));
 			if(GEngine)
 				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("applied force to player"));
 		}
@@ -136,7 +137,6 @@ void APhysicsWorldActor::UpdatePlayerPhysics(APawn* Pawn)
 void APhysicsWorldActor::StepPhysics(float DeltaSeconds)
 {
 	BtWorld->stepSimulation(DeltaSeconds, BtMaxSubSteps, 1./BtPhysicsFrequency);
-
 #if WITH_EDITORONLY_DATA
 	if (bPhysicsShowDebug)
 	{
@@ -197,23 +197,22 @@ void APhysicsWorldActor::SetupInitialDynamicPhysics(TArray<AActor*> Actors)
 	
 }
 
-void APhysicsWorldActor::SetupPlayerPhysics(TArray<APawn*> Pawns)
+btRigidBody* APhysicsWorldActor::AddPhysicsPlayer(APawn* Pawn)
 {
-	for (APawn* Pawn : Pawns)
-	{
-		// Just in case we remove items from the list & leave blank
-		if (Pawn == nullptr)
-			continue;
-		
-		const UPrimitiveComponent* Component = Pawn->FindComponentByClass<UPrimitiveComponent>();
-		if(Component != nullptr)
-		{
-			AddPlayerBody(Pawn, GetCachedDynamicShapeData(Pawn, 100));
-			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Pawn->GetName(), 100.f, *Component->GetName());
-		}
-		UE_LOG(LogTemp, Warning, TEXT("Initial Dynamic Actor: %s was added"), *Pawn->GetName());
-	}
+	// Just in case we remove items from the list & leave blank
+	if (Pawn == nullptr)
+		return nullptr;
 	
+	const UShapeComponent* Component = Pawn->FindComponentByClass<UShapeComponent>();
+	if(Component != nullptr)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Pawn->GetName(), 100.f, *Component->GetName());
+		UE_LOG(LogTemp, Warning, TEXT("Pawn: %s was added"), *Pawn->GetName());
+		
+		return AddPlayerBody(Pawn, GetCachedDynamicShapeData(Pawn, 100));
+	}
+	else
+		return nullptr;
 }
 
 btCollisionObject* APhysicsWorldActor::AddStaticCollision(btCollisionShape* Shape, const FTransform& Transform, float Friction, float Restitution, AActor* Actor)
@@ -540,7 +539,7 @@ btRigidBody* APhysicsWorldActor::AddPlayerBody(APawn* Pawn, const CachedDynamicS
 	//btTypedConstraint Constraint = btTypedConstraint(btTypedConstraintType::)
 	//Body->addConstraintRef()
 	Body->setAngularFactor(0.f);
-
+	Body->setActivationState(DISABLE_DEACTIVATION);
 
 	
 	Body->setUserPointer(Pawn);

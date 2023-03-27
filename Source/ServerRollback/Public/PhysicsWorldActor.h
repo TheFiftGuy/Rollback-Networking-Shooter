@@ -9,6 +9,7 @@
 #include "PhysicsWorldActor.generated.h"
 
 class BulletDebugDraw;
+class btDiscreteDynamicsWorld;
 //Class is sourced from (link), I have extended the functionality. https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
 UCLASS()
 class SERVERROLLBACK_API APhysicsWorldActor : public AActor
@@ -45,9 +46,6 @@ public:
 	//D I added this
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Objects")
 	TArray<AActor*> PhysicsDynamicActors;
-	//D
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Objects")
-	TArray<APawn*> PhysicsPlayers;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Debug")
 	bool bPhysicsShowDebug = false;
@@ -66,7 +64,7 @@ private:
 	btCollisionDispatcher* BtCollisionDispatcher;
 	btBroadphaseInterface* BtBroadphase;
 	btConstraintSolver* BtConstraintSolver;
-	btDynamicsWorld* BtWorld;
+	btDiscreteDynamicsWorld* BtWorld;
 	// Custom debug interface
 	BulletDebugDraw* BtDebugDraw;
 	// Dynamic bodies
@@ -105,11 +103,12 @@ private:
 
 	//D I added
 	void SetupInitialDynamicPhysics(TArray<AActor*> Actors);
-
-	//D
-	void SetupPlayerPhysics(TArray<APawn*> Pawns);
-
-
+public:
+	//D Add player pawn to bullet, return with player index
+	btRigidBody* AddPhysicsPlayer(APawn* Pawn);
+	btDiscreteDynamicsWorld* GetBtWorld() const { return BtWorld; }
+	
+private:
 	btCollisionObject* AddStaticCollision(btCollisionShape* Shape, const FTransform& Transform, float Friction, float Restitution, AActor* Actor);
 
 	typedef const std::function<void (btCollisionShape* /*SingleShape*/, const FTransform& /*RelativeXform*/)>& PhysicsGeometryCallback;

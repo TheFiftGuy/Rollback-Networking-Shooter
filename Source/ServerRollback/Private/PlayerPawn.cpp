@@ -4,10 +4,13 @@
 #include "PlayerPawn.h"
 #include "Components/CapsuleComponent.h"
 #include "Camera/CameraComponent.h"
-
 #include "EnhancedInputComponent.h"
-#include "PhysicsWorldActor.h"
 #include "Kismet/GameplayStatics.h"
+
+//Bullet Phys
+#include "PhysicsWorldActor.h"
+#include "BulletMain.h"
+#include "BulletHelpers.h"
 
 // Sets default values
 APlayerPawn::APlayerPawn()
@@ -49,6 +52,9 @@ void APlayerPawn::BeginPlay()
 	// Attach the weapon to the First Person Character
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 	GunMesh->AttachToComponent(FPSMesh, AttachmentRules, FName(TEXT("GripPoint")));
+	
+	BulletWorldActor = CastChecked<APhysicsWorldActor>(UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass()));
+	PlayerBody = BulletWorldActor->AddPhysicsPlayer(this);
 }
 
 // Called every frame
@@ -56,15 +62,13 @@ void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	//If there is movement to do
-	if(!GetPendingMovementInputVector().IsZero())
+	//if(!GetPendingMovementInputVector().IsZero())
 	{
-		AActor* btWorldActor = UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass());
-		if (APhysicsWorldActor* btWorld = CastChecked<APhysicsWorldActor>(btWorldActor))
-		{
-			btWorld->UpdatePlayerPhysics(this);
-
-		}
+		//BulletWorldActor->UpdatePlayerPhysics(this);
 	}
+	FVector InputVec = ConsumeMovementInputVector();
+	//BulletWorldActor->GetBtWorld()->sim
+	PlayerBody->setLinearVelocity(BulletHelpers::ToBtDir(InputVec * 10.f, false));
 	
 
 }
@@ -86,6 +90,10 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerPawn::Look);
+
+		//jumping
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerPawn::Jump);
+
 	}
 }
 
@@ -113,5 +121,37 @@ void APlayerPawn::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void APlayerPawn::Jump(const FInputActionValue& Value)
+{
+	btTransform btPlayerTransform;
+	PlayerBody->getMotionState()->getWorldTransform(btPlayerTransform);
+	
+	btVector3 From = btPlayerTransform.getOrigin();
+	btVector3 Offset = btVector3(0.f, 0.f, -0.96);
+	btVector3 To = From + Offset;
+	
+	btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
+	BulletWorldActor->GetBtWorld()->rayTest(btPlayerTransform.getOrigin(), To, rayCallback);
+
+	//if standing on something
+	if(rayCallback.hasHit())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Jump raycast hit: %hs"), rayCallback.m_collisionObject->getCollisionShape()->getName());
+		//input is a bool
+		const bool bJumpInput = Value.Get<bool>();
+		if (Controller != nullptr)
+		{
+			AddMovementInput(GetActorUpVector(), bJumpInput);
+			GEngine->AddOnScreenDebugMessage(-1, 10.0f, FColor::Green, TEXT("Player Jumped"));
+		}
+	}
+	//if in-air
+	else
+	{
+		AddMovementInput(GetActorUpVector(), false);
+	}
+
 }
 

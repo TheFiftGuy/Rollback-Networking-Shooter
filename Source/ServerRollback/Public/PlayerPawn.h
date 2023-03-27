@@ -10,6 +10,8 @@
 class UCapsuleComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
+class APhysicsWorldActor;
+class btRigidBody;
 
 UCLASS()
 class SERVERROLLBACK_API APlayerPawn : public APawn
@@ -31,6 +33,9 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(Category=Character, EditDefaultsOnly)
+	int MaxWalkSpeed = 10;
+	
 private:
 	//Components
 	
@@ -63,6 +68,13 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* FireAction;
 
+	//Bullet Stuff
+	APhysicsWorldActor* BulletWorldActor;
+	
+	btRigidBody* PlayerBody;
+
+	
+	
 protected:
 	/** Called for movement input */
 	void Move(const FInputActionValue& Value);
@@ -70,6 +82,7 @@ protected:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-public:
-	class btRigidBody* BulletBody;
+	/** Called for jumping input */
+	void Jump(const FInputActionValue& Value);
+
 };
