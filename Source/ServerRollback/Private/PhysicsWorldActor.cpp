@@ -3,6 +3,8 @@
 
 #include "PhysicsWorldActor.h"
 #include "Components/ShapeComponent.h"
+#include "Components/CapsuleComponent.h"
+#include "PlayerPawn.h"
 
 #include "BulletMain.h"
 #include "BulletHelpers.h"
@@ -115,7 +117,7 @@ void APhysicsWorldActor::Tick(float DeltaTime)
 	StepPhysics(DeltaTime);
 }
 
-void APhysicsWorldActor::UpdatePlayerPhysics(APawn* Pawn)
+void APhysicsWorldActor::UpdatePlayerPhysics(APlayerPawn* Pawn)
 {
 	FVector InputVec = Pawn->ConsumeMovementInputVector();
 
@@ -197,19 +199,37 @@ void APhysicsWorldActor::SetupInitialDynamicPhysics(TArray<AActor*> Actors)
 	
 }
 
-btRigidBody* APhysicsWorldActor::AddPhysicsPlayer(APawn* Pawn)
+btRigidBody* APhysicsWorldActor::AddPhysicsPlayer(APlayerPawn* Pawn)
 {
 	// Just in case we remove items from the list & leave blank
 	if (Pawn == nullptr)
 		return nullptr;
 	
-	const UShapeComponent* Component = Pawn->FindComponentByClass<UShapeComponent>();
-	if(Component != nullptr)
+	const UCapsuleComponent* Capsule = Pawn->GetCapsuleComponent();
+	if(Capsule != nullptr)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Pawn->GetName(), 100.f, *Component->GetName());
-		UE_LOG(LogTemp, Warning, TEXT("Pawn: %s was added"), *Pawn->GetName());
+		//D Create bullet capsule
+		// X scales radius, Z scales height
+		btCollisionShape* Shape = GetCapsuleCollisionShape(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight()-2.f);
 		
-		return AddPlayerBody(Pawn, GetCachedDynamicShapeData(Pawn, 100));
+		/*// Capsules are in Z in UE, in Y in Bullet, so roll -90
+		FRotator Rot(0, 0, 0); // Rot(0, 0, -90)
+		// Also apply any local rotation
+		Rot += Capsule->GetRelativeRotation();
+		FTransform ShapeXform(Rot, Capsule->GetRelativeLocation());
+		// Shape transform adds to any relative transform already here
+		FTransform XForm = ShapeXform * (Capsule->GetComponentTransform() * Pawn->GetActorTransform().Inverse());*/
+
+		//D Player capsule shape data
+		CachedDynamicShapeData CapsuleData;
+		CapsuleData.ClassName = Pawn->GetClass()->GetFName();
+		CapsuleData.Shape = Shape;
+		CapsuleData.bIsCompound = false;
+		CapsuleData.Mass = 100.f;
+		CapsuleData.Shape->calculateLocalInertia(CapsuleData.Mass, CapsuleData.Inertia);
+		
+		UE_LOG(LogTemp, Warning, TEXT("Pawn: %s was added"), *Pawn->GetName());
+		return AddPlayerBody(Pawn, CapsuleData);
 	}
 	else
 		return nullptr;
@@ -323,10 +343,11 @@ void APhysicsWorldActor::ExtractPhysicsGeometry(const FTransform& XformSoFar, UB
 		// X scales radius, Z scales height
 		Shape = GetCapsuleCollisionShape(Capsule.Radius * Scale.X, Capsule.Length * Scale.Z);
 		// Capsules are in Z in UE, in Y in Bullet, so roll -90
-		FRotator Rot(0, 0, -90);
-		// Also apply any local rotation
-		Rot += Capsule.Rotation;
-		FTransform ShapeXform(Rot, Capsule.Center);
+		//D ^ nevermind this, changed it to fix that elswhere using btCapsuleShapeZ
+		// FRotator Rot(0, 0, -90);
+		// // Also apply any local rotation
+		// Rot += Capsule.Rotation;
+		FTransform ShapeXform(Capsule.Rotation, Capsule.Center); //D was (Rot, Capsule.center)
 		// Shape transform adds to any relative transform already here
 		FTransform XForm = ShapeXform * XformSoFar;
 		CB(Shape, XForm);
@@ -405,7 +426,7 @@ btCollisionShape* APhysicsWorldActor::GetCapsuleCollisionShape(float Radius, flo
 	}
 
 	// Not found, create
-	auto S = new btCapsuleShape(R, H);
+	auto S = new btCapsuleShapeZ(R, H); //D changed from btCapsuleShape to btCapsuleShapeZ so that its upright in Unreal coordinates
 	BtCapsuleCollisionShapes.Add(S);
 
 	return S;
@@ -528,7 +549,7 @@ btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, btCollisionShape* C
 	return Body;
 }
 
-btRigidBody* APhysicsWorldActor::AddPlayerBody(APawn* Pawn, const CachedDynamicShapeData& ShapeData)
+btRigidBody* APhysicsWorldActor::AddPlayerBody(APlayerPawn* Pawn, const CachedDynamicShapeData& ShapeData)
 {
 	auto Origin = GetActorLocation();
 	auto MotionState = new BulletCustomMotionState(Pawn, Origin);
@@ -540,7 +561,6 @@ btRigidBody* APhysicsWorldActor::AddPlayerBody(APawn* Pawn, const CachedDynamicS
 	//Body->addConstraintRef()
 	Body->setAngularFactor(0.f);
 	Body->setActivationState(DISABLE_DEACTIVATION);
-
 	
 	Body->setUserPointer(Pawn);
 	BtWorld->addRigidBody(Body);

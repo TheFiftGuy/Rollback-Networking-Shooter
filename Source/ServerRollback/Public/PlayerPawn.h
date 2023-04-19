@@ -33,6 +33,8 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	const UCapsuleComponent* GetCapsuleComponent() const { return CapsuleComponent; }
+
 	UPROPERTY(Category=Character, EditDefaultsOnly)
 	int MaxWalkSpeed = 10;
 	

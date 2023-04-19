@@ -81,14 +81,14 @@ void APlayerPawn::Tick(float DeltaTime)
 		BodyVel.setZ(BulletHelpers::ToBtDir(FVector(0.f, 0.f, JumpForce)).getZ());
 		bInAir = true;
 		PlayerBody->setGravity(BulletWorldActor->GetBtWorld()->getGravity());
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Jump Force applied"));
+		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Jump Force applied"));
 	}
 	//if grounded but not jumping. (this prevents sliding down small inclines)
 	else if(!bInAir && PlayerBody->getLinearVelocity().getZ() <= 0)
 	{
 		BodyVel.setZ(0);
 		PlayerBody->setGravity(btVector3());
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, TEXT("Standing"));
+		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, TEXT("Standing"));
 	}
 	//if mid-air
 	else
@@ -96,7 +96,7 @@ void APlayerPawn::Tick(float DeltaTime)
 		//keep current momentum
 		PlayerBody->setGravity(BulletWorldActor->GetBtWorld()->getGravity());
 		BodyVel.setZ(PlayerBody->getLinearVelocity().getZ());
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Momentum"));
+		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Momentum"));
 	}
 	
 	PlayerBody->setLinearVelocity(BodyVel);
@@ -184,7 +184,7 @@ bool APlayerPawn::IsGrounded()
 	//if standing on something
 	if(rayCallback.hasHit())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("Jump raycast hit: %hs"), rayCallback.m_collisionObject->getCollisionShape()->getName());
+		//UE_LOG(LogTemp, Warning, TEXT("Jump raycast hit: %hs"), rayCallback.m_collisionObject->getCollisionShape()->getName());
 		bInAir = false;
 		return true;
 	}

@@ -10,6 +10,7 @@
 
 class BulletDebugDraw;
 class btDiscreteDynamicsWorld;
+class APlayerPawn;
 //Class is sourced from (link), I have extended the functionality. https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
 UCLASS()
 class SERVERROLLBACK_API APhysicsWorldActor : public AActor
@@ -30,7 +31,7 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-	void UpdatePlayerPhysics(APawn* Pawn);
+	void UpdatePlayerPhysics(APlayerPawn* Pawn);
 
 	//D Static Actor Properties section
 	
@@ -105,7 +106,7 @@ private:
 	void SetupInitialDynamicPhysics(TArray<AActor*> Actors);
 public:
 	//D Add player pawn to bullet, return with player index
-	btRigidBody* AddPhysicsPlayer(APawn* Pawn);
+	btRigidBody* AddPhysicsPlayer(APlayerPawn* Pawn);
 	btDiscreteDynamicsWorld* GetBtWorld() const { return BtWorld; }
 	
 private:
@@ -130,6 +131,6 @@ private:
 	btRigidBody* AddRigidBody(AActor* Actor, const CachedDynamicShapeData& ShapeData);
 	btRigidBody* AddRigidBody(AActor* Actor, btCollisionShape* CollisionShape, btVector3 Inertia, float Mass);
 	//D
-	btRigidBody* AddPlayerBody(APawn* Pawn, const CachedDynamicShapeData& ShapeData);
+	btRigidBody* AddPlayerBody(APlayerPawn* Pawn, const CachedDynamicShapeData& ShapeData);
 	
 };
