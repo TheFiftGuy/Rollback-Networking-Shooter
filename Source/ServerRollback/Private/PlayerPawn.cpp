@@ -123,6 +123,8 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		//jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APlayerPawn::Jump);
 
+		//firing
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &APlayerPawn::Fire);
 	}
 }
 
@@ -167,6 +169,34 @@ void APlayerPawn::Jump(const FInputActionValue& Value)
 		}
 	}
 	bInAir = true;
+}
+
+void APlayerPawn::Fire()
+{
+	//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Fired"));
+	btTransform btPlayerTransform;
+	PlayerBody->getMotionState()->getWorldTransform(btPlayerTransform);
+	//btVector3 From = btPlayerTransform.getOrigin();
+	btVector3 From = btPlayerTransform.getOrigin();
+	
+	btVector3 Offset = BulletHelpers::ToBtPos(Camera->GetRelativeLocation(), BulletWorldActor->GetActorLocation());
+	From += Offset;
+	
+	btVector3 CamDir = BulletHelpers::ToBtDir(Camera->GetForwardVector()) * 10000.f; //prob bigger than necessary 
+	btVector3 To = From + CamDir;
+	
+	btCollisionWorld::AllHitsRayResultCallback rayCallback(From, To);
+	BulletWorldActor->GetBtWorld()->rayTest(From, To, rayCallback);
+	//DrawDebugLine(GetWorld(), BulletHelpers::ToUEPos(From,BulletWorldActor->GetActorLocation()), BulletHelpers::ToUEPos(To,BulletWorldActor->GetActorLocation()),FColor::Green, false, 5.f, 0, 1);
+	
+	//if standing on something
+	if(rayCallback.hasHit())
+	{
+		for(int i=0; i< rayCallback.m_collisionObjects.size(); i++)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("Fire raycast hit: %hs"), rayCallback.m_collisionObjects[i]->getCollisionShape()->getName());
+		}
+	}
 }
 
 bool APlayerPawn::IsGrounded()

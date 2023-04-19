@@ -209,25 +209,37 @@ btRigidBody* APhysicsWorldActor::AddPhysicsPlayer(APlayerPawn* Pawn)
 	if(Capsule != nullptr)
 	{
 		//D Create bullet capsule
-		// X scales radius, Z scales height
-		btCollisionShape* Shape = GetCapsuleCollisionShape(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight()-2.f);
-		
-		/*// Capsules are in Z in UE, in Y in Bullet, so roll -90
-		FRotator Rot(0, 0, 0); // Rot(0, 0, -90)
-		// Also apply any local rotation
-		Rot += Capsule->GetRelativeRotation();
-		FTransform ShapeXform(Rot, Capsule->GetRelativeLocation());
-		// Shape transform adds to any relative transform already here
-		FTransform XForm = ShapeXform * (Capsule->GetComponentTransform() * Pawn->GetActorTransform().Inverse());*/
+		CachedDynamicShapeData CapsuleData;		
+		//D Find already cached shape if exists.
+		const FName ClassName = Pawn->GetClass()->GetFName();
+		for (auto&& Data: CachedDynamicShapes)
+		{
+			if (Data.ClassName == ClassName)
+			{
+				CapsuleData = Data;
+				break;
+			}
+		}
+		//if not found (hasnt been cached yet)
+		if(CapsuleData.ClassName == FName())
+		{
+			btCollisionShape* Shape = GetCapsuleCollisionShape(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight()-2.f);
+			/*// Capsules are in Z in UE, in Y in Bullet, so roll -90
+			FRotator Rot(0, 0, 0); // Rot(0, 0, -90)
+			// Also apply any local rotation
+			Rot += Capsule->GetRelativeRotation();
+			FTransform ShapeXform(Rot, Capsule->GetRelativeLocation());
+			// Shape transform adds to any relative transform already here
+			FTransform XForm = ShapeXform * (Capsule->GetComponentTransform() * Pawn->GetActorTransform().Inverse());*/
 
-		//D Player capsule shape data
-		CachedDynamicShapeData CapsuleData;
-		CapsuleData.ClassName = Pawn->GetClass()->GetFName();
-		CapsuleData.Shape = Shape;
-		CapsuleData.bIsCompound = false;
-		CapsuleData.Mass = 100.f;
-		CapsuleData.Shape->calculateLocalInertia(CapsuleData.Mass, CapsuleData.Inertia);
-		
+			//D Player capsule shape data
+			CapsuleData.ClassName = Pawn->GetClass()->GetFName();
+			CapsuleData.Shape = Shape;
+			CapsuleData.bIsCompound = false;
+			CapsuleData.Mass = 100.f;
+			CapsuleData.Shape->calculateLocalInertia(CapsuleData.Mass, CapsuleData.Inertia);
+			CachedDynamicShapes.Add(CapsuleData);
+		}
 		UE_LOG(LogTemp, Warning, TEXT("Pawn: %s was added"), *Pawn->GetName());
 		return AddPlayerBody(Pawn, CapsuleData);
 	}

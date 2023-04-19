@@ -12,6 +12,7 @@ class USkeletalMeshComponent;
 class UCameraComponent;
 class APhysicsWorldActor;
 class btRigidBody;
+class UInputAction;
 
 UCLASS()
 class SERVERROLLBACK_API APlayerPawn : public APawn
@@ -42,7 +43,7 @@ public:
 	int JumpForce = 750;
 	
 private:
-	bool bInAir;
+
 	//Components
 	UPROPERTY(Category=Character, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UCapsuleComponent> CapsuleComponent;
@@ -59,26 +60,26 @@ private:
 	//Input
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	class UInputAction* JumpAction;
+	UInputAction* JumpAction;
 
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	class UInputAction* MoveAction;
+	UInputAction* MoveAction;
 
 	/** Look Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	class UInputAction* LookAction;
+	UInputAction* LookAction;
 
 	/** Fire Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	class UInputAction* FireAction;
+	UInputAction* FireAction;
 
 	//Bullet Stuff
 	APhysicsWorldActor* BulletWorldActor;
 	
 	btRigidBody* PlayerBody;
 
-	
+	bool bInAir;
 	
 protected:
 	/** Called for movement input */
@@ -89,6 +90,9 @@ protected:
 
 	/** Called for jumping input */
 	void Jump(const FInputActionValue& Value);
+	
+	/** Called for Fire/Shoot input */
+	void Fire();
 
 	bool IsGrounded();
 };

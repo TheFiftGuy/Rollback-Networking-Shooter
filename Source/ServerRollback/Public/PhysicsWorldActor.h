@@ -50,6 +50,8 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Debug")
 	bool bPhysicsShowDebug = false;
+	// Custom debug interface
+	BulletDebugDraw* BtDebugDraw;
 private:
 	//D current defaults are the bullet ones, will likely need to change BtMaxSubSteps to > 1
 	int BtMaxSubSteps = 3;
@@ -66,8 +68,7 @@ private:
 	btBroadphaseInterface* BtBroadphase;
 	btConstraintSolver* BtConstraintSolver;
 	btDiscreteDynamicsWorld* BtWorld;
-	// Custom debug interface
-	BulletDebugDraw* BtDebugDraw;
+
 	// Dynamic bodies
 	TArray<btRigidBody*> BtRigidBodies;
 	// Static colliders
