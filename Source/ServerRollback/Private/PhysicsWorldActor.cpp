@@ -560,17 +560,14 @@ btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, btCollisionShape* C
 
 	return Body;
 }
-
+//D Add the Unreal Player Pawn added to the Bullet3 Physics Simulation World for Deterministic Gameplay.
 btRigidBody* APhysicsWorldActor::AddPlayerBody(APlayerPawn* Pawn, const CachedDynamicShapeData& ShapeData)
 {
 	auto Origin = GetActorLocation();
 	auto MotionState = new BulletCustomMotionState(Pawn, Origin);
 	const btRigidBody::btRigidBodyConstructionInfo rbInfo(ShapeData.Mass, MotionState, ShapeData.Shape, ShapeData.Inertia);
 	btRigidBody* Body = new btRigidBody(rbInfo);
-
-	//D
-	//btTypedConstraint Constraint = btTypedConstraint(btTypedConstraintType::)
-	//Body->addConstraintRef()
+	
 	Body->setAngularFactor(0.f);
 	Body->setActivationState(DISABLE_DEACTIVATION);
 	

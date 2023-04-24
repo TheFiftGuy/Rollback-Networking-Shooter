@@ -185,16 +185,21 @@ void APlayerPawn::Fire()
 	btVector3 CamDir = BulletHelpers::ToBtDir(Camera->GetForwardVector()) * 10000.f; //prob bigger than necessary 
 	btVector3 To = From + CamDir;
 	
-	btCollisionWorld::AllHitsRayResultCallback rayCallback(From, To);
+	btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
 	BulletWorldActor->GetBtWorld()->rayTest(From, To, rayCallback);
-	//DrawDebugLine(GetWorld(), BulletHelpers::ToUEPos(From,BulletWorldActor->GetActorLocation()), BulletHelpers::ToUEPos(To,BulletWorldActor->GetActorLocation()),FColor::Green, false, 5.f, 0, 1);
+
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Fired"));
+	DrawDebugLine(GetWorld(), BulletHelpers::ToUEPos(From,BulletWorldActor->GetActorLocation()), BulletHelpers::ToUEPos(To,BulletWorldActor->GetActorLocation()),FColor::Green, false, 1.f, 0, 1);
 	
-	//if standing on something
 	if(rayCallback.hasHit())
 	{
-		for(int i=0; i< rayCallback.m_collisionObjects.size(); i++)
+		//I'm sorry but it has to be cast this way. Unreal doesn't like turning dumb void* into Unreal AActor*.
+		APlayerPawn* HitPlayer = (APlayerPawn*)rayCallback.m_collisionObject->getUserPointer();
+		
+		if (HitPlayer->IsA(APlayerPawn::StaticClass()))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Fire raycast hit: %hs"), rayCallback.m_collisionObjects[i]->getCollisionShape()->getName());
+			//Player has successfully shot another player
+			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, FString::Printf(TEXT("Hit: %s"), *HitPlayer->GetName()));
 		}
 	}
 }
