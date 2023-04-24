@@ -138,7 +138,9 @@ void APhysicsWorldActor::UpdatePlayerPhysics(APlayerPawn* Pawn)
 
 void APhysicsWorldActor::StepPhysics(float DeltaSeconds)
 {
+	//D stepSimulation() returns number of simulation sub steps. I'll need to do this externally in ggpo
 	BtWorld->stepSimulation(DeltaSeconds, BtMaxSubSteps, 1./BtPhysicsFrequency);
+
 #if WITH_EDITORONLY_DATA
 	if (bPhysicsShowDebug)
 	{
