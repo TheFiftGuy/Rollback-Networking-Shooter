@@ -77,7 +77,7 @@ void APlayerPawn::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 
 	FBulletInput Input;
-	if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+	if(ABulletPlayerController* BulletController = Cast<ABulletPlayerController>(Controller))
 	{
 		Input = BulletController->GetUEBulletInput();
 	}
@@ -128,7 +128,7 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerPawn::Look);
 
 		//jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APlayerPawn::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &APlayerPawn::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &APlayerPawn::StopJumping);
 
 
@@ -176,22 +176,19 @@ void APlayerPawn::Look(const FInputActionValue& Value)
 
 void APlayerPawn::Jump(const FInputActionValue& Value)
 {
-	//if standing on something
-	if(IsGrounded())
+	//we always receive jump input, even when player cannot jump (aka mid-air, or holding jump)
+	const bool bJumpInput = Value.Get<bool>();
+	if (Controller != nullptr)
 	{
-		//input is a bool
-		const bool bJumpInput = Value.Get<bool>();
-		if (Controller != nullptr)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Jumped"));
-			AddMovementInput(GetActorUpVector(), bJumpInput);
+		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Jumped"));
+		AddMovementInput(GetActorUpVector(), bJumpInput);
 
-			if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
-			{
-				BulletController->CurrentInput.MoveInputVector.Z = 1;
-			}
+		if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+		{
+			BulletController->CurrentInput.MoveInputVector.Z = 1;
 		}
 	}
+
 }
 
 void APlayerPawn::Fire()

@@ -53,9 +53,11 @@ public:
 	// Custom debug interface
 	BulletDebugDraw* BtDebugDraw;
 private:
-	//D current defaults are the bullet ones, will likely need to change BtMaxSubSteps to > 1
-	int BtMaxSubSteps = 3;
-	double BtPhysicsFrequency = 60.0;
+	//D Bullet default for maxSubsteps is 3, using 0 enables manual sub stepping
+	int BtMaxSubSteps = 0;
+	// 1 / desiredFPS (default 60)
+	double BtPhysicsTimeStep = 1./60.0; 
+	btScalar TimeStepAccumulator = 0;
 	
 	void StepPhysics(float DeltaSeconds);
 	//D Data storage section

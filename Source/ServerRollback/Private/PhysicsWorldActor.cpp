@@ -139,7 +139,17 @@ void APhysicsWorldActor::UpdatePlayerPhysics(APlayerPawn* Pawn)
 void APhysicsWorldActor::StepPhysics(float DeltaSeconds)
 {
 	//D stepSimulation() returns number of simulation sub steps. I'll need to do this externally in ggpo
-	BtWorld->stepSimulation(DeltaSeconds, BtMaxSubSteps, 1./BtPhysicsFrequency);
+	TimeStepAccumulator += DeltaSeconds;
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Emerald, FString::Printf(TEXT("AccuTime: %f || DeltaTime = %f"), TimeStepAccumulator, DeltaSeconds));
+	int steps = 0;
+	while(TimeStepAccumulator >= BtPhysicsTimeStep)
+	{
+		BtWorld->stepSimulation(BtPhysicsTimeStep, BtMaxSubSteps, BtPhysicsTimeStep);
+		TimeStepAccumulator -= BtPhysicsTimeStep;
+		steps++;
+	}
+	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Emerald, FString::Printf(TEXT("Num Steps: %d"), steps));
+
 
 #if WITH_EDITORONLY_DATA
 	if (bPhysicsShowDebug)
