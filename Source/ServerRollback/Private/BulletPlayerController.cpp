@@ -3,13 +3,11 @@
 
 #include "BulletPlayerController.h"
 
-FBulletInput ABulletPlayerController::GetUEBulletInput()
+#include "EnhancedInputComponent.h"
+#include "PlayerPawn.h"
+
+FBulletInput ABulletPlayerController::GetUEBulletInput() const
 {
-	FBulletInput Input = { FVector(), FRotator(), false };
-
-	Input.MoveInputVector = GetPawn()->ConsumeMovementInputVector();
-	Input.LookInputRotator = FRotator(RotationInput.Pitch, RotationInput.Yaw, 0);
-	Input.bInputFire = bInputtingFire;
-
-	return  Input;
+	//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Emerald, FString::Printf(TEXT("BulletController: Move = %s  || Look = %s || Fire = %d"), *CurrentInput.MoveInputVector.ToString(), *CurrentInput.LookInputRotator.ToString(), CurrentInput.bInputFire));
+	return  CurrentInput;
 }

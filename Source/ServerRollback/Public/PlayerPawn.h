@@ -5,7 +5,9 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
 #include "InputActionValue.h"
+#include "InputMappingContext.h"
 #include "PlayerPawn.generated.h"
+
 
 class UCapsuleComponent;
 class USkeletalMeshComponent;
@@ -57,7 +59,11 @@ private:
 	UPROPERTY(Category=Character, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> Camera;
 
+public:
 	//Input
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	UInputMappingContext* DefaultMappingContext;
+	
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
@@ -74,12 +80,11 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* FireAction;
 
+private:
 	//Bullet Stuff
 	APhysicsWorldActor* BulletWorldActor;
 	
 	btRigidBody* PlayerBody;
-
-	bool bInAir;
 	
 protected:
 	/** Called for movement input */
@@ -93,6 +98,10 @@ protected:
 	
 	/** Called for Fire/Shoot input */
 	void Fire();
+
+	void StopMoving();
+	void StopJumping();
+	void StopFiring();
 
 	bool IsGrounded();
 };

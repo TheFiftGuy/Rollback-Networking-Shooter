@@ -27,7 +27,7 @@ class SERVERROLLBACK_API ABulletPlayerController : public APlayerController
 	GENERATED_BODY()
 	
 public:
-	bool bInputtingFire = false;
+	FBulletInput CurrentInput = { FVector(), FRotator(), false };
 	
-	FBulletInput GetUEBulletInput();
+	FBulletInput GetUEBulletInput() const;
 };

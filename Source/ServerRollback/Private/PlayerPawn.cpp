@@ -6,11 +6,14 @@
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "EnhancedInputSubsystems.h"
+
 
 //Bullet Phys
 #include "PhysicsWorldActor.h"
 #include "BulletMain.h"
 #include "BulletHelpers.h"
+#include "BulletPlayerController.h"
 
 // Sets default values
 APlayerPawn::APlayerPawn()
@@ -53,6 +56,17 @@ void APlayerPawn::BeginPlay()
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 	GunMesh->AttachToComponent(FPSMesh, AttachmentRules, FName(TEXT("GripPoint")));
 	
+	if (auto* PlayerController = Cast<APlayerController>(Controller))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			if(DefaultMappingContext)
+			{
+				Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			}
+		}
+	}
+	
 	BulletWorldActor = CastChecked<APhysicsWorldActor>(UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass()));
 	PlayerBody = BulletWorldActor->AddPhysicsPlayer(this);
 }
@@ -62,44 +76,40 @@ void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	FBulletInput Input;
+	if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+	{
+		Input = BulletController->GetUEBulletInput();
+	}
+	
 	//Rotate character's Pitch (left right)
-	FRotator InputRot = GetControlRotation();
+	FRotator InputRot = Input.LookInputRotator;
 	InputRot.Pitch = 0; InputRot.Roll = 0;
 	btQuaternion BodyRot = BulletHelpers::ToBt(InputRot);
 	PlayerBody->getWorldTransform().setRotation(BodyRot);//unsure if this way or motionState() way is deterministic.
 
 	//move player
-	FVector InputVec = ConsumeMovementInputVector();
+	FVector InputVec = Input.MoveInputVector;
 	InputVec.Normalize(1);
 	btVector3 BodyVel =	BulletHelpers::ToBtDir(InputVec * MaxWalkSpeed, false);
 
-	IsGrounded();
+	
 	//if jump input
-	if(InputVec.Z > 0)
+	bool bGrounded = IsGrounded();
+	if(InputVec.Z > 0 && bGrounded)
 	{
-		//apply vertical impulse
+		//apply vertical velocity
 		BodyVel.setZ(BulletHelpers::ToBtDir(FVector(0.f, 0.f, JumpForce)).getZ());
-		bInAir = true;
-		PlayerBody->setGravity(BulletWorldActor->GetBtWorld()->getGravity());
 		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Jump Force applied"));
 	}
-	//if grounded but not jumping. (this prevents sliding down small inclines)
-	else if(!bInAir && PlayerBody->getLinearVelocity().getZ() <= 0)
-	{
-		BodyVel.setZ(0);
-		PlayerBody->setGravity(btVector3());
-		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Yellow, TEXT("Standing"));
-	}
-	//if mid-air
 	else
 	{
-		//keep current momentum
-		PlayerBody->setGravity(BulletWorldActor->GetBtWorld()->getGravity());
 		BodyVel.setZ(PlayerBody->getLinearVelocity().getZ());
-		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Momentum"));
 	}
+
 	
 	PlayerBody->setLinearVelocity(BodyVel);
+	
 }
 
 // Called to bind functionality to input
@@ -112,15 +122,20 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 	{
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &APlayerPawn::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &APlayerPawn::StopMoving);
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &APlayerPawn::Look);
 
 		//jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &APlayerPawn::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &APlayerPawn::StopJumping);
+
 
 		//firing
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &APlayerPawn::Fire);
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &APlayerPawn::StopFiring);
+
 	}
 }
 
@@ -131,9 +146,14 @@ void APlayerPawn::Move(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
+		
 		// add movement 
 		AddMovementInput(GetActorForwardVector(), MovementVector.Y);
 		AddMovementInput(GetActorRightVector(), MovementVector.X);
+		if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+		{
+			BulletController->CurrentInput.MoveInputVector = ConsumeMovementInputVector();
+		}
 	}
 }
 
@@ -147,6 +167,10 @@ void APlayerPawn::Look(const FInputActionValue& Value)
 		// add yaw and pitch input to controller
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
+		if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+		{
+			BulletController->CurrentInput.LookInputRotator = GetControlRotation();
+		}
 	}
 }
 
@@ -161,14 +185,23 @@ void APlayerPawn::Jump(const FInputActionValue& Value)
 		{
 			GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Jumped"));
 			AddMovementInput(GetActorUpVector(), bJumpInput);
-			bInAir = true;
+
+			if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+			{
+				BulletController->CurrentInput.MoveInputVector.Z = 1;
+			}
 		}
 	}
-	bInAir = true;
 }
 
 void APlayerPawn::Fire()
 {
+	//Temp
+	if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+	{
+		BulletController->CurrentInput.bInputFire = true;
+		//BulletController->GetUEBulletInput();
+	}
 	//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Fired"));
 	btTransform btPlayerTransform;
 	PlayerBody->getMotionState()->getWorldTransform(btPlayerTransform);
@@ -200,6 +233,36 @@ void APlayerPawn::Fire()
 	}
 }
 
+void APlayerPawn::StopMoving()
+{
+	if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+	{
+		BulletController->CurrentInput.MoveInputVector.X = 0;
+		BulletController->CurrentInput.MoveInputVector.Y = 0;
+		//BulletController->GetUEBulletInput();
+
+	}
+}
+
+void APlayerPawn::StopJumping()
+{
+	if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+	{
+		BulletController->CurrentInput.MoveInputVector.Z = 0;
+		//BulletController->GetUEBulletInput();
+
+	}
+}
+
+void APlayerPawn::StopFiring()
+{
+	if(ABulletPlayerController* BulletController = CastChecked<ABulletPlayerController>(Controller))
+	{
+		BulletController->CurrentInput.bInputFire = false;
+		//BulletController->GetUEBulletInput();
+	}
+}
+
 bool APlayerPawn::IsGrounded()
 {
 	btTransform btPlayerTransform;
@@ -216,11 +279,9 @@ bool APlayerPawn::IsGrounded()
 	if(rayCallback.hasHit())
 	{
 		//UE_LOG(LogTemp, Warning, TEXT("Jump raycast hit: %hs"), rayCallback.m_collisionObject->getCollisionShape()->getName());
-		bInAir = false;
+
 		return true;
 	}
-	//if mid-air
-	bInAir = true;
 	return false;
 }
 
