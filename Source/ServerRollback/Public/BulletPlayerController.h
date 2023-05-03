@@ -19,6 +19,9 @@ struct FBulletInput
 	//Player pressing Fire button
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	bool bInputFire;
+
+	FBulletInput()	{	MoveInputVector = FVector();	LookInputRotator = FRotator();	bInputFire = false;	}
+	FBulletInput(FVector MoveInput_, FRotator LookInput_, bool FireInput_ = false)	{	MoveInputVector = MoveInput_;	LookInputRotator = LookInput_;	bInputFire = FireInput_;	}
 };
 
 UCLASS()

@@ -92,11 +92,10 @@ void APlayerPawn::Tick(float DeltaTime)
 	FVector InputVec = Input.MoveInputVector;
 	InputVec.Normalize(1);
 	btVector3 BodyVel =	BulletHelpers::ToBtDir(InputVec * MaxWalkSpeed, false);
-
 	
 	//if jump input
 	bool bGrounded = IsGrounded();
-	if(InputVec.Z > 0 && bGrounded)
+	if(InputVec.Z > KINDA_SMALL_NUMBER && bGrounded)
 	{
 		//apply vertical velocity
 		BodyVel.setZ(BulletHelpers::ToBtDir(FVector(0.f, 0.f, JumpForce)).getZ());

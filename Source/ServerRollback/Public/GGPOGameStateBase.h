@@ -6,10 +6,11 @@
 
 #include "include/ggponet.h"
 
-
 #include "GameFramework/GameStateBase.h"
 #include "GGPOGameStateBase.generated.h"
 
+
+struct FBulletInput;
 /**
  * 
  */
@@ -39,6 +40,28 @@ public:
 	virtual void OnSessionStarted_Implementation();
 
 private:
+	void TickGameState();
+
+	/** Gets the inputs from the local player. */
+	FBulletInput GetLocalInputs();
+
+	/*
+	 * Run a single frame of the game.
+	 */
+	void ggpoGame_RunFrame(FBulletInput local_input);
+	/*
+	 * Advances the game state by exactly 1 frame using the inputs specified
+	 * for player 1 and player 2.
+	 */
+	void ggpoGame_AdvanceFrame(FBulletInput inputs[], int32 disconnect_flags);
+	/*
+	 * Spend our idle time in ggpo so it can use whatever time we have left over
+	 * for its internal bookkeeping.
+	 */
+	void ggpoGame_Idle(int32 time);
+	void ggpoGame_Exit();
+	
+	
 	/** Starts a GGPO game session. */
 	bool TryStartGGPOPlayerSession(int32 NumPlayers, const UGGPONetwork* NetworkAddresses);
 	

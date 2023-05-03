@@ -140,7 +140,7 @@ void APhysicsWorldActor::StepPhysics(float DeltaSeconds)
 {
 	//D stepSimulation() returns number of simulation sub steps. I'll need to do this externally in ggpo
 	TimeStepAccumulator += DeltaSeconds;
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Emerald, FString::Printf(TEXT("AccuTime: %f || DeltaTime = %f"), TimeStepAccumulator, DeltaSeconds));
+	//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Emerald, FString::Printf(TEXT("AccuTime: %f || DeltaTime = %f"), TimeStepAccumulator, DeltaSeconds));
 	int steps = 0;
 	while(TimeStepAccumulator >= BtPhysicsTimeStep)
 	{
@@ -148,7 +148,7 @@ void APhysicsWorldActor::StepPhysics(float DeltaSeconds)
 		TimeStepAccumulator -= BtPhysicsTimeStep;
 		steps++;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Emerald, FString::Printf(TEXT("Num Steps: %d"), steps));
+	//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Emerald, FString::Printf(TEXT("Num Steps: %d"), steps));
 
 
 #if WITH_EDITORONLY_DATA

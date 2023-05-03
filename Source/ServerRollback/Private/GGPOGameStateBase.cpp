@@ -3,6 +3,8 @@
 
 #include "GGPOGameStateBase.h"
 #include "GGPOGameInstance.h"
+#include "BulletPlayerController.h"
+#include "Kismet/GameplayStatics.h"
 
 void AGGPOGameStateBase::BeginPlay()
 {
@@ -10,11 +12,8 @@ void AGGPOGameStateBase::BeginPlay()
 
 	UGGPONetwork* NetworkAddresses = nullptr;
 	int32 NumPlayers = 1;
-
-	// If this is a GGPO game instance
-	UGameInstance* GameInstance = GetGameInstance();
-	UGGPOGameInstance* GgpoGameInstance = Cast<UGGPOGameInstance>(GameInstance);
-	if (GgpoGameInstance != nullptr)
+	
+	if (UGGPOGameInstance* GgpoGameInstance = Cast<UGGPOGameInstance>(GetGameInstance()))
 	{
 		// Get the network addresses
 		NetworkAddresses = GgpoGameInstance->NetworkAddresses;
@@ -28,7 +27,6 @@ void AGGPOGameStateBase::BeginPlay()
 	if (bSessionStarted)
 	{
 		OnSessionStarted();
-		
 		//D TODO  Render network graph stuff(taken from VW port).
 		/*
 		NetworkGraphData.Empty();
@@ -39,7 +37,6 @@ void AGGPOGameStateBase::BeginPlay()
 			NetworkGraphData.Add(FNetworkGraphPlayer{ });
 		}
 		*/
-		
 	}
 	else
 	{
@@ -53,6 +50,99 @@ void AGGPOGameStateBase::Tick(float DeltaSeconds)
 }
 
 void AGGPOGameStateBase::OnSessionStarted_Implementation()	{ }
+
+void AGGPOGameStateBase::TickGameState()
+{
+	FBulletInput Input = GetLocalInputs();
+
+	//D TODO: Network Data stuff can go here
+	/*TArray<FGGPONetworkStats> Network = VectorWar_GetNetworkStats();
+	for (int32 i = 0; i < NetworkGraphData.Num(); i++)
+	{
+		TArray<FNetworkGraphData>* PlayerData = &NetworkGraphData[i].PlayerData;
+
+		int32 Fairness;
+		int32 LocalFairness = Network[i].timesync.local_frames_behind;
+		int32 RemoteFairness = Network[i].timesync.remote_frames_behind;
+		int32 Ping = Network[i].network.ping;
+
+		if (LocalFairness < 0 && RemoteFairness < 0) {
+			/*
+			 * Both think it's unfair (which, ironically, is fair).  Scale both and subtrace.
+			 #1#
+			Fairness = abs(abs(LocalFairness) - abs(RemoteFairness));
+		}
+		else if (LocalFairness > 0 && RemoteFairness > 0) {
+			/*
+			 * Impossible!  Unless the network has negative transmit time.  Odd....
+			 #1#
+			Fairness = 0;
+		}
+		else {
+			/*
+			 * They disagree.  Add.
+			 #1#
+			Fairness = abs(LocalFairness) + abs(RemoteFairness);
+		}
+
+		FNetworkGraphData GraphData = FNetworkGraphData{ Fairness, RemoteFairness, Ping };
+		PlayerData->Add(GraphData);
+
+		while (PlayerData->Num() > NETWORK_GRAPH_STEPS)
+		{
+			PlayerData->RemoveAt(0);
+		}
+	}*/
+}
+
+FBulletInput AGGPOGameStateBase::GetLocalInputs()
+{
+	
+	if(ABulletPlayerController* BulletController = Cast<ABulletPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(),0)))
+	{
+		return BulletController->GetUEBulletInput();
+	}
+	//else return blank
+	return FBulletInput {FVector(), FRotator(), false};
+}
+
+void AGGPOGameStateBase::ggpoGame_RunFrame(FBulletInput local_input)
+{
+	GGPOErrorCode result = GGPO_OK;
+	int disconnect_flags;
+	FBulletInput inputs[GGPO_MAX_PLAYERS] = { FBulletInput() };
+
+	//D TODO: Non-game-state and localPlayerHandle
+	/*if (ngs.local_player_handle != GGPO_INVALID_HANDLE) {
+#if defined(SYNC_TEST)
+		local_input = rand(); // test: use random inputs to demonstrate sync testing
+#endif
+		result = GGPONet::ggpo_add_local_input(ggpo, ngs.local_player_handle, &local_input, sizeof(local_input));
+	}*/
+
+	// synchronize these inputs with ggpo.  If we have enough input to proceed
+	// ggpo will modify the input list with the correct inputs to use and return 1.
+	if (GGPO_SUCCEEDED(result)) {
+		result = GGPONet::ggpo_synchronize_input(ggpo, inputs, sizeof(FBulletInput) * GGPO_MAX_PLAYERS, &disconnect_flags);
+		if (GGPO_SUCCEEDED(result)) {
+			// inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
+			// the game by 1 frame using those inputs.
+			ggpoGame_AdvanceFrame(inputs, disconnect_flags);
+		}
+	}
+}
+
+void AGGPOGameStateBase::ggpoGame_AdvanceFrame(FBulletInput inputs[], int32 disconnect_flags)
+{
+}
+
+void AGGPOGameStateBase::ggpoGame_Idle(int32 time)
+{
+}
+
+void AGGPOGameStateBase::ggpoGame_Exit()
+{
+}
 
 bool AGGPOGameStateBase::TryStartGGPOPlayerSession(int32 NumPlayers, const UGGPONetwork* NetworkAddresses)
 {
