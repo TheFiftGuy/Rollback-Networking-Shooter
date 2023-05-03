@@ -18,6 +18,7 @@ void AGGPOGameStateBase::BeginPlay()
 		// Get the network addresses
 		NetworkAddresses = GgpoGameInstance->NetworkAddresses;
 		NumPlayers = NetworkAddresses->NumPlayers();
+		//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("NumPlayers = %d"), NumPlayers));
 		// Reset the game instance network addresses
 		GgpoGameInstance->NetworkAddresses = nullptr;
 	}
