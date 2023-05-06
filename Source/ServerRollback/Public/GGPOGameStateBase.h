@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 
-#include "include/ggponet.h"
+#include "GGPOGame/GGPOGame.h"
 
 #include "GameFramework/GameStateBase.h"
 #include "GGPOGameStateBase.generated.h"
@@ -21,7 +21,9 @@ class SERVERROLLBACK_API AGGPOGameStateBase : public AGameStateBase
 private:
 	GGPOSession* ggpo = nullptr;
 
-
+	GameState gs = { 0 };
+	//NonGameState ngs = { 0 };
+	
 	bool bSessionStarted;
 
 
@@ -39,6 +41,8 @@ public:
 	void OnSessionStarted();
 	virtual void OnSessionStarted_Implementation();
 
+	GameState GetGameState() { return  gs; }
+	//NonGameState GetNonGameState() const { return ngs; }
 private:
 	void TickGameState();
 

@@ -135,6 +135,27 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(FBulletInput local_input)
 
 void AGGPOGameStateBase::ggpoGame_AdvanceFrame(FBulletInput inputs[], int32 disconnect_flags)
 {
+	gs.Update();
+	
+	/*// update the checksums to display in the top of the window.  this
+	// helps to detect desyncs.
+	ngs.now.framenumber = gs._framenumber;
+	ngs.now.checksum = fletcher32_checksum((short*)&gs, sizeof(gs) / 2);
+	if ((gs._framenumber % 90) == 0) {
+		ngs.periodic = ngs.now;
+	}
+
+	// Notify ggpo that we've moved forward exactly 1 frame.
+	GGPONet::ggpo_advance_frame(ggpo);
+
+	// Update the performance monitor display.
+	GGPOPlayerHandle handles[MAX_PLAYERS];
+	int count = 0;
+	for (int i = 0; i < ngs.num_players; i++) {
+		if (ngs.players[i].type == EGGPOPlayerType::REMOTE) {
+			handles[count++] = ngs.players[i].handle;
+		}
+	}*/
 }
 
 void AGGPOGameStateBase::ggpoGame_Idle(int32 time)
@@ -209,6 +230,7 @@ bool AGGPOGameStateBase::TryStartGGPOPlayerSession(int32 NumPlayers, const UGGPO
 
 void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlayer* players, int32 num_spectators)
 {
+	gs.Init();
 	/*GGPOErrorCode result;
 
 	// Initialize the game state

@@ -3,14 +3,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
 
-#include "BulletMinimal.h"
+#include "GGPOGame/GGPOGame.h"
+
+#include "GameFramework/Actor.h"
 #include "PhysicsWorldActor.generated.h"
 
 class BulletDebugDraw;
-class btDiscreteDynamicsWorld;
 class APlayerPawn;
+
 //Class is sourced from (link), I have extended the functionality. https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
 UCLASS()
 class SERVERROLLBACK_API APhysicsWorldActor : public AActor
@@ -52,7 +53,12 @@ public:
 	bool bPhysicsShowDebug = false;
 	// Custom debug interface
 	BulletDebugDraw* BtDebugDraw;
+	
+	//D reference to the UE GameState
+	class AGGPOGameStateBase* GGPOGameStateBase;
 private:
+
+	
 	//D Bullet default for maxSubsteps is 3, using 0 enables manual sub stepping
 	int BtMaxSubSteps = 0;
 	// 1 / desiredFPS (default 60)
@@ -63,6 +69,8 @@ private:
 	//D Data storage section
 	//...
 
+	//B
+	/*
 	// Bullet section
 	// Global objects
 	btCollisionConfiguration* BtCollisionConfig;
@@ -98,6 +106,7 @@ private:
 		btVector3 Inertia; // because we like to precalc this
 	};
 	TArray<CachedDynamicShapeData> CachedDynamicShapes;
+	*/
 
 	//...
 	//D data storage section end
@@ -110,9 +119,9 @@ private:
 public:
 	//D Add player pawn to bullet, return with player index
 	btRigidBody* AddPhysicsPlayer(APlayerPawn* Pawn);
-	btDiscreteDynamicsWorld* GetBtWorld() const { return BtWorld; }
+	//B btDiscreteDynamicsWorld* GetBtWorld() const { return BtWorld; }
 	
-private:
+
 	btCollisionObject* AddStaticCollision(btCollisionShape* Shape, const FTransform& Transform, float Friction, float Restitution, AActor* Actor);
 
 	typedef const std::function<void (btCollisionShape* /*SingleShape*/, const FTransform& /*RelativeXform*/)>& PhysicsGeometryCallback;
@@ -129,11 +138,11 @@ private:
 	//D Static Collision section end
 
 	//D Dynamic collision
-	const CachedDynamicShapeData& GetCachedDynamicShapeData(AActor* Actor, float Mass);
+	const BulletPhysics::CachedDynamicShapeData& GetCachedDynamicShapeData(AActor* Actor, float Mass);
 
-	btRigidBody* AddRigidBody(AActor* Actor, const CachedDynamicShapeData& ShapeData);
+	btRigidBody* AddRigidBody(AActor* Actor, const BulletPhysics::CachedDynamicShapeData& ShapeData);
 	btRigidBody* AddRigidBody(AActor* Actor, btCollisionShape* CollisionShape, btVector3 Inertia, float Mass);
 	//D
-	btRigidBody* AddPlayerBody(APlayerPawn* Pawn, const CachedDynamicShapeData& ShapeData);
+	btRigidBody* AddPlayerBody(APlayerPawn* Pawn, const BulletPhysics::CachedDynamicShapeData& ShapeData);
 	
 };

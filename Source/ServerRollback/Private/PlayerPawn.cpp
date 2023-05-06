@@ -14,6 +14,8 @@
 #include "BulletMain.h"
 #include "BulletHelpers.h"
 #include "BulletPlayerController.h"
+#include "GGPOGameStateBase.h"
+
 
 // Sets default values
 APlayerPawn::APlayerPawn()
@@ -211,7 +213,7 @@ void APlayerPawn::Fire()
 	btVector3 To = From + CamDir;
 	
 	btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
-	BulletWorldActor->GetBtWorld()->rayTest(From, To, rayCallback);
+	BulletWorldActor->GGPOGameStateBase->GetGameState().Bullet.BtWorld->rayTest(From, To, rayCallback);
 
 	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Fired"));
 	DrawDebugLine(GetWorld(), BulletHelpers::ToUEPos(From,BulletWorldActor->GetActorLocation()), BulletHelpers::ToUEPos(To,BulletWorldActor->GetActorLocation()),FColor::Green, false, 1.f, 0, 1);
@@ -269,7 +271,7 @@ bool APlayerPawn::IsGrounded()
 	btVector3 To = From + Offset;
 	
 	btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
-	BulletWorldActor->GetBtWorld()->rayTest(btPlayerTransform.getOrigin(), To, rayCallback);
+	BulletWorldActor->GGPOGameStateBase->GetGameState().Bullet.BtWorld->rayTest(btPlayerTransform.getOrigin(), To, rayCallback);
 	
 	//if standing on something
 	if(rayCallback.hasHit())

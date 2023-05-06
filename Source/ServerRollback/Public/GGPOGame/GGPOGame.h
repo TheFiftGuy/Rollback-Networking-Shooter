@@ -1,8 +1,8 @@
 #pragma once
 
-#include "gamestate.h"
-//#include "nongamestate.h"
 #include "include/ggponet.h"
+#include "GameState.h"
+#include "NonGameState.h"
 
 /*
  * GGPOGame.h --
@@ -19,3 +19,7 @@ enum VectorWarInputs {
 	INPUT_FIRE              = (1 << 4),
 	INPUT_BOMB              = (1 << 5),
  };
+
+
+int fletcher32_checksum(short* data, size_t len);
+uint32 get_time();
