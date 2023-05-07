@@ -43,7 +43,7 @@ void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPla
 	{
 		outPlayerMovement->Y = -1;
 	}
-	outPlayerMovement->Z = Inputs & INPUT_JUMP;
+	outPlayerMovement->Z = ((Inputs & INPUT_JUMP) ? 1 : 0);
 	
 	/*int32 MouseDeltaX = ((Inputs >> 8) & 0x1FFF) | (((Inputs >> 20) & 0x1) ? 0xFFFFE000 : 0);
 	int32 MouseDeltaY = ((Inputs >> 21) & 0x1FFF) | (((Inputs >> 33) & 0x1) ? 0xFFFFE000 : 0);
@@ -60,6 +60,8 @@ void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPla
 
 void GameState::ApplyInputToPlayer(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
 {
+	Bullet.BtPlayerBodies[PlayerIndex]->setLinearVelocity(BulletHelpers::ToBtDir(*outPlayerMovement * 10.f, false));
+	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Pawn# %d velocity: %s"), Bullet.BtPlayerBodies.Num(), *outPlayerMovement->ToString()));
 }
 
 void GameState::Update(int inputs[], int disconnect_flags)
@@ -140,6 +142,7 @@ void GameState::OnDestroy()
 	// Clear our type-specific arrays (duplicate refs)
 	Bullet.BtStaticObjects.Empty();
 	Bullet.BtRigidBodies.Empty();
+	Bullet.BtPlayerBodies.Empty();
 }
 
 void GameState::InitBullet()

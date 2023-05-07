@@ -58,8 +58,8 @@ void APlayerPawn::BeginPlay()
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 	GunMesh->AttachToComponent(FPSMesh, AttachmentRules, FName(TEXT("GripPoint")));
 	
-	BulletWorldActor = CastChecked<APhysicsWorldActor>(UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass()));
-	PlayerBody = BulletWorldActor->AddPhysicsPlayer(this);
+	//BulletWorldActor = CastChecked<APhysicsWorldActor>(UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass()));
+	//PlayerBody = BulletWorldActor->AddPhysicsPlayer(this);
 }
 
 // Called every frame

@@ -8,6 +8,7 @@
 
 #include <windef.h>
 
+class APlayerPawn;
 class btDiscreteDynamicsWorld;
 
 //Contains All bulletphysics data
@@ -22,6 +23,8 @@ struct BulletPhysics	{
 
 	// Dynamic bodies
 	TArray<btRigidBody*> BtRigidBodies;
+	TArray<btRigidBody*> BtPlayerBodies;
+
 	// Static colliders
 	TArray<btCollisionObject*> BtStaticObjects;
 	// Re-usable collision shapes

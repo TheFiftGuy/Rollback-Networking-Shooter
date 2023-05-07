@@ -30,6 +30,7 @@ public:
 	UPROPERTY(Category="Player",EditAnywhere,BlueprintReadWrite)
 	TSubclassOf<APlayerPawn> PawnClass;
 
+	UPROPERTY()
 	TArray<APlayerPawn*> PlayerPawns;
 	int LocalPlayerIndex = 0;
 	

@@ -638,7 +638,7 @@ btRigidBody* APhysicsWorldActor::AddPlayerBody(APlayerPawn* Pawn, const BulletPh
 	
 	Body->setUserPointer(Pawn);
 	GGPOGameStateBase->gs.Bullet.BtWorld->addRigidBody(Body);
-	GGPOGameStateBase->gs.Bullet.BtRigidBodies.Add(Body);
+	GGPOGameStateBase->gs.Bullet.BtPlayerBodies.Add(Body);
 
 	return Body;
 }

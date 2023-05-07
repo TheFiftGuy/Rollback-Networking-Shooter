@@ -304,11 +304,14 @@ void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlay
 		FActorSpawnParameters SpawnInfo;
 		FVector SpawnLoc = FVector(0,0,150);
 		FRotator SpawnRot = FRotator();
-		for (int i = 0; i < gs.NumPlayers; i++)
+		
+		for (int i = 0; i < num_players; i++)
 		{
+			
 			SpawnLoc.Y = 200*i; //offset pos
 			PlayerPawns.Add(GetWorld()->SpawnActor<APlayerPawn>(PawnClass, SpawnLoc, SpawnRot, SpawnInfo));
-			PhysWorldActor->AddPhysicsPlayer(PlayerPawns.Last());
+			PhysWorldActor->AddPhysicsPlayer(PlayerPawns[i]);
+			UE_LOG(LogTemp, Warning, TEXT("Added Player Body"));
 		}
 	}
 	
