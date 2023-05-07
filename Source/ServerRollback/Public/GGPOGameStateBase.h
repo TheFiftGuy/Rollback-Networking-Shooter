@@ -3,36 +3,41 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
 #include "GGPOGame/GGPOGame.h"
-
+#include "PlayerPawn.h"
 #include "GameFramework/GameStateBase.h"
 #include "GGPOGameStateBase.generated.h"
-
-
-struct FBulletInput;
 /**
  * 
  */
+
 UCLASS()
 class SERVERROLLBACK_API AGGPOGameStateBase : public AGameStateBase
 {
 	GENERATED_BODY()
 private:
 	GGPOSession* ggpo = nullptr;
-
-	GameState gs = { 0 };
-	//NonGameState ngs = { 0 };
+	
+	//GameState gs = { 0 };
+	NonGameState ngs = { 0 };
 	
 	bool bSessionStarted;
-
+	float ElapsedTime = 0.f;
 
 public:
+	GameState gs = { 0 };
+
+	UPROPERTY(Category="Player",EditAnywhere,BlueprintReadWrite)
+	TSubclassOf<APlayerPawn> PawnClass;
+
+	TArray<APlayerPawn*> PlayerPawns;
+	int LocalPlayerIndex = 0;
+	
+	AGGPOGameStateBase();
 	virtual void BeginPlay() override;
 
 	virtual void Tick(float DeltaSeconds) override;
-
-
+	
 	/**
 	 * Called from BeginPlay() after creating the game state.
 	 * Can be overridden by a blueprint to create actors that represent the game state.
@@ -40,24 +45,23 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="GGPO")
 	void OnSessionStarted();
 	virtual void OnSessionStarted_Implementation();
-
-	GameState GetGameState() { return  gs; }
+	
 	//NonGameState GetNonGameState() const { return ngs; }
 private:
 	void TickGameState();
 
 	/** Gets the inputs from the local player. */
-	FBulletInput GetLocalInputs();
+	int32 GetLocalInputs();
 
 	/*
 	 * Run a single frame of the game.
 	 */
-	void ggpoGame_RunFrame(FBulletInput local_input);
+	void ggpoGame_RunFrame(int32 local_input);
 	/*
 	 * Advances the game state by exactly 1 frame using the inputs specified
 	 * for player 1 and player 2.
 	 */
-	void ggpoGame_AdvanceFrame(FBulletInput inputs[], int32 disconnect_flags);
+	void ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags);
 	/*
 	 * Spend our idle time in ggpo so it can use whatever time we have left over
 	 * for its internal bookkeeping.

@@ -40,7 +40,7 @@ void APhysicsWorldActor::BeginPlay()
 {
 	Super::BeginPlay();
 
-	GGPOGameStateBase = GetWorld()->GetGameState<AGGPOGameStateBase>();
+	/*GGPOGameStateBase = GetWorld()->GetGameState<AGGPOGameStateBase>();
 	
 	//D option section to enable debug draw mode
 	// set up debug rendering
@@ -54,12 +54,36 @@ void APhysicsWorldActor::BeginPlay()
 	//B
 	/*BtDebugDraw = new BulletDebugDraw(GetWorld(), GetActorLocation());
 	BtWorld->setDebugDrawer(BtDebugDraw);
+	BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);#1#
+
+	SetupStaticGeometryPhysics(PhysicsStaticActors1, PhysicsStatic1Friction, PhysicsStatic1Restitution);
+
+	SetupInitialDynamicPhysics(PhysicsDynamicActors);*/
+
+}
+
+void APhysicsWorldActor::InitPhysWorld()
+{
+	UE_LOG(LogTemp, Warning, TEXT(" APhysicsWorldActor::InitPhysWorld()"));
+	GGPOGameStateBase = GetWorld()->GetGameState<AGGPOGameStateBase>();
+	
+	//D option section to enable debug draw mode
+	// set up debug rendering
+	if(GGPOGameStateBase)
+	{
+		BtDebugDraw = new BulletDebugDraw(GetWorld(), GetActorLocation());
+		GGPOGameStateBase->gs.Bullet.BtWorld->setDebugDrawer(BtDebugDraw);
+		GGPOGameStateBase->gs.Bullet.BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
+	}
+	
+	//B
+	/*BtDebugDraw = new BulletDebugDraw(GetWorld(), GetActorLocation());
+	BtWorld->setDebugDrawer(BtDebugDraw);
 	BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);*/
 
 	SetupStaticGeometryPhysics(PhysicsStaticActors1, PhysicsStatic1Friction, PhysicsStatic1Restitution);
 
 	SetupInitialDynamicPhysics(PhysicsDynamicActors);
-
 }
 
 void APhysicsWorldActor::BeginDestroy()
@@ -135,7 +159,7 @@ void APhysicsWorldActor::Tick(float DeltaTime)
 #if WITH_EDITORONLY_DATA
 	if (bPhysicsShowDebug)
 	{
-		GGPOGameStateBase->GetGameState().Bullet.BtWorld->debugDrawWorld();
+		GGPOGameStateBase->gs.Bullet.BtWorld->debugDrawWorld();
 		//BtDebugDraw->drawLine(btVector3(0.0, 0.0, 0.0), btVector3(100.0f, 100.0f, 100.0f), btVector3(255,0,0));
 
 		//DrawDebugSphere(GetWorld(), BulletHelpers::ToUEPos(BtRigidBodies.Last()->getWorldTransform().getOrigin(), GetActorLocation()), 50.0f, 4, FColor::Red, false, 1, 0, 2);
@@ -148,7 +172,7 @@ void APhysicsWorldActor::UpdatePlayerPhysics(APlayerPawn* Pawn)
 {
 	FVector InputVec = Pawn->ConsumeMovementInputVector();
 
-	for(btRigidBody* Body : GGPOGameStateBase->GetGameState().Bullet.BtRigidBodies)
+	for(btRigidBody* Body : GGPOGameStateBase->gs.Bullet.BtRigidBodies)
 	{
 		if(Pawn == Body->getUserPointer())
 		{
@@ -252,7 +276,7 @@ btRigidBody* APhysicsWorldActor::AddPhysicsPlayer(APlayerPawn* Pawn)
 		BulletPhysics::CachedDynamicShapeData CapsuleData;		
 		//D Find already cached shape if exists.
 		const FName ClassName = Pawn->GetClass()->GetFName();
-		for (auto&& Data: GGPOGameStateBase->GetGameState().Bullet.CachedDynamicShapes)
+		for (auto&& Data: GGPOGameStateBase->gs.Bullet.CachedDynamicShapes)
 		{
 			if (Data.ClassName == ClassName)
 			{
@@ -278,7 +302,7 @@ btRigidBody* APhysicsWorldActor::AddPhysicsPlayer(APlayerPawn* Pawn)
 			CapsuleData.bIsCompound = false;
 			CapsuleData.Mass = 100.f;
 			CapsuleData.Shape->calculateLocalInertia(CapsuleData.Mass, CapsuleData.Inertia);
-			GGPOGameStateBase->GetGameState().Bullet.CachedDynamicShapes.Add(CapsuleData);
+			GGPOGameStateBase->gs.Bullet.CachedDynamicShapes.Add(CapsuleData);
 		}
 		UE_LOG(LogTemp, Warning, TEXT("Pawn: %s was added"), *Pawn->GetName());
 		return AddPlayerBody(Pawn, CapsuleData);
@@ -297,8 +321,8 @@ btCollisionObject* APhysicsWorldActor::AddStaticCollision(btCollisionShape* Shap
 	Obj->setRestitution(Restitution);
 	Obj->setUserPointer(Actor);
 	
-	GGPOGameStateBase->GetGameState().Bullet.BtWorld->addCollisionObject(Obj);
-	GGPOGameStateBase->GetGameState().Bullet.BtStaticObjects.Add(Obj);
+	GGPOGameStateBase->gs.Bullet.BtWorld->addCollisionObject(Obj);
+	GGPOGameStateBase->gs.Bullet.BtStaticObjects.Add(Obj);
 	return Obj;
 }
 
@@ -417,7 +441,7 @@ btCollisionShape* APhysicsWorldActor::GetBoxCollisionShape(const FVector& Dimens
 {
 	// Simple brute force lookup for now, probably doesn't need anything more clever
 	btVector3 HalfSize = BulletHelpers::ToBtSize(Dimensions * 0.5);
-	for (auto && S : GGPOGameStateBase->GetGameState().Bullet.BtBoxCollisionShapes)
+	for (auto && S : GGPOGameStateBase->gs.Bullet.BtBoxCollisionShapes)
 	{
 		btVector3 Sz = S->getHalfExtentsWithMargin();
 		if (FMath::IsNearlyEqual(Sz.x(), HalfSize.x()) && 
@@ -432,7 +456,7 @@ btCollisionShape* APhysicsWorldActor::GetBoxCollisionShape(const FVector& Dimens
 	auto S = new btBoxShape(HalfSize);
 	// Get rid of margins, just cause issues for me
 	S->setMargin(0);
-	GGPOGameStateBase->GetGameState().Bullet.BtBoxCollisionShapes.Add(S);
+	GGPOGameStateBase->gs.Bullet.BtBoxCollisionShapes.Add(S);
 
 	return S;
 	
@@ -442,7 +466,7 @@ btCollisionShape* APhysicsWorldActor::GetSphereCollisionShape(float Radius)
 {
 	// Simple brute force lookup for now, probably doesn't need anything more clever
 	btScalar Rad = BulletHelpers::ToBtSize(Radius);
-	for (auto && S : GGPOGameStateBase->GetGameState().Bullet.BtSphereCollisionShapes)
+	for (auto && S : GGPOGameStateBase->gs.Bullet.BtSphereCollisionShapes)
 	{
 		// Bullet subtracts a margin from its internal shape, so add back to compare
 		if (FMath::IsNearlyEqual(S->getRadius(), Rad))
@@ -455,7 +479,7 @@ btCollisionShape* APhysicsWorldActor::GetSphereCollisionShape(float Radius)
 	auto S = new btSphereShape(Rad);
 	// Get rid of margins, just cause issues for me
 	S->setMargin(0);
-	GGPOGameStateBase->GetGameState().Bullet.BtSphereCollisionShapes.Add(S);
+	GGPOGameStateBase->gs.Bullet.BtSphereCollisionShapes.Add(S);
 
 	return S;
 	
@@ -468,7 +492,7 @@ btCollisionShape* APhysicsWorldActor::GetCapsuleCollisionShape(float Radius, flo
 	btScalar H = BulletHelpers::ToBtSize(Height);
 	btScalar HalfH = H * 0.5f;
 	
-	for (auto && S : GGPOGameStateBase->GetGameState().Bullet.BtCapsuleCollisionShapes)
+	for (auto && S : GGPOGameStateBase->gs.Bullet.BtCapsuleCollisionShapes)
 	{
 		// Bullet subtracts a margin from its internal shape, so add back to compare
 		if (FMath::IsNearlyEqual(S->getRadius(), R) &&
@@ -480,7 +504,7 @@ btCollisionShape* APhysicsWorldActor::GetCapsuleCollisionShape(float Radius, flo
 
 	// Not found, create
 	auto S = new btCapsuleShapeZ(R, H); //D changed from btCapsuleShape to btCapsuleShapeZ so that its upright in Unreal coordinates
-	GGPOGameStateBase->GetGameState().Bullet.BtCapsuleCollisionShapes.Add(S);
+	GGPOGameStateBase->gs.Bullet.BtCapsuleCollisionShapes.Add(S);
 
 	return S;
 	
@@ -492,7 +516,7 @@ btCollisionShape* APhysicsWorldActor::GetConvexHullCollisionShape(UBodySetup* Bo
 	UE_LOG(LogTemp, Warning, TEXT("Scale: %s"), *Scale.ToString());
 
 	
-	for (auto && S : GGPOGameStateBase->GetGameState().Bullet.BtConvexHullCollisionShapes)
+	for (auto && S : GGPOGameStateBase->gs.Bullet.BtConvexHullCollisionShapes)
 	{
 		if (S.BodySetup == BodySetup && S.HullIndex == ConvexIndex && S.Scale.Equals(Scale))
 		{
@@ -515,7 +539,7 @@ btCollisionShape* APhysicsWorldActor::GetConvexHullCollisionShape(UBodySetup* Bo
 	C->initializePolyhedralFeatures();
 	
 	
-	GGPOGameStateBase->GetGameState().Bullet.BtConvexHullCollisionShapes.Add({
+	GGPOGameStateBase->gs.Bullet.BtConvexHullCollisionShapes.Add({
         BodySetup,
 		ConvexIndex,
 		Scale,
@@ -529,7 +553,7 @@ const BulletPhysics::CachedDynamicShapeData& APhysicsWorldActor::GetCachedDynami
 {
 	// We re-use compound shapes based on (leaf) BP class
 	const FName ClassName = Actor->GetClass()->GetFName();
-	for (auto&& Data: GGPOGameStateBase->GetGameState().Bullet.CachedDynamicShapes)
+	for (auto&& Data: GGPOGameStateBase->gs.Bullet.CachedDynamicShapes)
 	{
 		if (Data.ClassName == ClassName)
 			return Data;
@@ -578,9 +602,9 @@ const BulletPhysics::CachedDynamicShapeData& APhysicsWorldActor::GetCachedDynami
 	ShapeData.Shape->calculateLocalInertia(Mass, ShapeData.Inertia);
 
 	// Cache for future use
-	GGPOGameStateBase->GetGameState().Bullet.CachedDynamicShapes.Add(ShapeData);
+	GGPOGameStateBase->gs.Bullet.CachedDynamicShapes.Add(ShapeData);
 
-	return GGPOGameStateBase->GetGameState().Bullet.CachedDynamicShapes.Last();
+	return GGPOGameStateBase->gs.Bullet.CachedDynamicShapes.Last();
 	
 }
 
@@ -596,8 +620,8 @@ btRigidBody* APhysicsWorldActor::AddRigidBody(AActor* Actor, btCollisionShape* C
 	const btRigidBody::btRigidBodyConstructionInfo rbInfo(Mass, MotionState, CollisionShape, Inertia);
 	btRigidBody* Body = new btRigidBody(rbInfo);
 	Body->setUserPointer(Actor);
-	GGPOGameStateBase->GetGameState().Bullet.BtWorld->addRigidBody(Body);
-	GGPOGameStateBase->GetGameState().Bullet.BtRigidBodies.Add(Body);
+	GGPOGameStateBase->gs.Bullet.BtWorld->addRigidBody(Body);
+	GGPOGameStateBase->gs.Bullet.BtRigidBodies.Add(Body);
 
 	return Body;
 }
@@ -613,8 +637,8 @@ btRigidBody* APhysicsWorldActor::AddPlayerBody(APlayerPawn* Pawn, const BulletPh
 	Body->setActivationState(DISABLE_DEACTIVATION);
 	
 	Body->setUserPointer(Pawn);
-	GGPOGameStateBase->GetGameState().Bullet.BtWorld->addRigidBody(Body);
-	GGPOGameStateBase->GetGameState().Bullet.BtRigidBodies.Add(Body);
+	GGPOGameStateBase->gs.Bullet.BtWorld->addRigidBody(Body);
+	GGPOGameStateBase->gs.Bullet.BtRigidBodies.Add(Body);
 
 	return Body;
 }

@@ -3,3 +3,7 @@
 
 #include "GGPOGameModeBase.h"
 
+AGGPOGameModeBase::AGGPOGameModeBase()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}

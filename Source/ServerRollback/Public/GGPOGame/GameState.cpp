@@ -3,23 +3,85 @@
 #include "BulletHelpers.h"
 #include "BulletCustomMotionState.h"
 #include "BulletDebugDraw.h"
+#include "GGPOGame.h"
 
-void GameState::Init()
+void GameState::Init(int NumPlayers_)
 {
+	NumPlayers = NumPlayers_;
 	InitBullet();
 }
 
-void GameState::Update()
+void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
 {
-	FrameNumber++;
+	bool Forwards = Inputs & INPUT_FORWARDS;
+	bool Backwards = Inputs & INPUT_BACKWARDS;
+	bool Left = Inputs & INPUT_LEFT;
+	bool Right = Inputs & INPUT_RIGHT;
+	//F or B
+	if(Forwards && Backwards)
+	{
+		outPlayerMovement->X = 0;
+	}
+	else if(Forwards)
+	{
+		outPlayerMovement->X = 1;
+	}
+	else if(Backwards)
+	{
+		outPlayerMovement->X = -1;
+	}
+	//L or R
+	if(Left && Right)
+	{
+		outPlayerMovement->Y = 0;
+	}
+	else if(Right)
+	{
+		outPlayerMovement->Y = 1;
+	}
+	else if(Left)
+	{
+		outPlayerMovement->Y = -1;
+	}
+	outPlayerMovement->Z = Inputs & INPUT_JUMP;
 	
+	/*int32 MouseDeltaX = ((Inputs >> 8) & 0x1FFF) | (((Inputs >> 20) & 0x1) ? 0xFFFFE000 : 0);
+	int32 MouseDeltaY = ((Inputs >> 21) & 0x1FFF) | (((Inputs >> 33) & 0x1) ? 0xFFFFE000 : 0);
+	*outMouseDelta = FVector2D(MouseDeltaX / 8192.0f, MouseDeltaY / 8192.0f);*/
+	int32 MouseDeltaX = ((Inputs >> 6) & 0x1FFF);
+	int32 MouseDeltaY = ((Inputs >> 19) & 0x1FFF);
+	MouseDeltaX |= ((MouseDeltaX & 0x1000) ? 0xFFFFE000 : 0);
+	MouseDeltaY |= ((MouseDeltaY & 0x1000) ? 0xFFFFE000 : 0);
+	*outMouseDelta = FVector2D(MouseDeltaX / 4096.0f, MouseDeltaY / 4096.0f);
+
+	
+	*outFire = Inputs & INPUT_FIRE;
+}
+
+void GameState::ApplyInputToPlayer(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
+{
+}
+
+void GameState::Update(int inputs[], int disconnect_flags)
+{
 	//parse input
 	//move player
+	FrameNumber++;
+	for (int i = 0; i < NumPlayers; i++) {
+		FVector PlayerMovement = FVector();
+		FVector2D MouseDelta = FVector2D();
+		bool Fire = false;
+		
+		ParsePlayerInputs(inputs[i], i, &PlayerMovement, &MouseDelta, &Fire);
+		
+		ApplyInputToPlayer(i, &PlayerMovement, &MouseDelta, &Fire);
+	}
+	
 	
 	Bullet.BtWorld->stepSimulation(btScalar(1.) / btScalar(60.), 0);
 }
 
-GameState::~GameState()
+void GameState::OnDestroy()
 {
 	if(Bullet.BtWorld)
 	{

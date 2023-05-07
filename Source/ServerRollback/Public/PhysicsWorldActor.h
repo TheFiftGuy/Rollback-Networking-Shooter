@@ -28,7 +28,9 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-public:	
+public:
+
+	void InitPhysWorld();
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
@@ -55,6 +57,7 @@ public:
 	BulletDebugDraw* BtDebugDraw;
 	
 	//D reference to the UE GameState
+	UPROPERTY()
 	class AGGPOGameStateBase* GGPOGameStateBase;
 private:
 

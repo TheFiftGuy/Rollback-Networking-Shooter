@@ -4,11 +4,21 @@
 #include "GGPOGameStateBase.h"
 #include "GGPOGameInstance.h"
 #include "BulletPlayerController.h"
+#include "PhysicsWorldActor.h"
 #include "Kismet/GameplayStatics.h"
+
+#define FRAME_RATE 60
+#define ONE_FRAME (1.0f / FRAME_RATE)
+
+AGGPOGameStateBase::AGGPOGameStateBase()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
 
 void AGGPOGameStateBase::BeginPlay()
 {
 	Super::BeginPlay();
+	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::BeginPlay()"));
 
 	UGGPONetwork* NetworkAddresses = nullptr;
 	int32 NumPlayers = 1;
@@ -48,13 +58,48 @@ void AGGPOGameStateBase::BeginPlay()
 void AGGPOGameStateBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::Tick"));
+
+	MSG msg = { 0 };
+
+	ElapsedTime += DeltaSeconds;
+
+	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) {
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
+		if (msg.message == WM_QUIT) { }
+	}
+	int32 IdleMs = (int32)(ONE_FRAME - (int32)(ElapsedTime * 1000));
+	ggpoGame_Idle(FMath::Max(0, IdleMs - 1));
+	while (ElapsedTime >= ONE_FRAME) {
+		TickGameState();
+		ElapsedTime -= ONE_FRAME;
+	}
 }
 
-void AGGPOGameStateBase::OnSessionStarted_Implementation()	{ }
+void AGGPOGameStateBase::OnSessionStarted_Implementation()
+{
+	/*FActorSpawnParameters SpawnInfo;
+	FVector SpawnLoc = FVector(0,0,100);
+	FRotator SpawnRot = FRotator();
+	for (int i = 0; i < gs.NumPlayers; i++)
+	{
+		SpawnLoc.X = 100*i; //offset pos
+		PlayerPawns.Add(GetWorld()->SpawnActor<APlayerPawn>(PawnClass, SpawnLoc, SpawnRot, SpawnInfo));
+	}*/
+	if(PlayerPawns.Num() > 0)	{
+		UGameplayStatics::GetPlayerController(GetWorld(), 0)->Possess(PlayerPawns[LocalPlayerIndex]);
+		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Possed Pawn#: %d"), LocalPlayerIndex));
+	}
+		
+}
 
 void AGGPOGameStateBase::TickGameState()
 {
-	FBulletInput Input = GetLocalInputs();
+	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::TickGameState()"));
+
+	int32 Input = GetLocalInputs();
+	ggpoGame_RunFrame(Input);
 
 	//D TODO: Network Data stuff can go here
 	/*TArray<FGGPONetworkStats> Network = VectorWar_GetNetworkStats();
@@ -96,35 +141,34 @@ void AGGPOGameStateBase::TickGameState()
 	}*/
 }
 
-FBulletInput AGGPOGameStateBase::GetLocalInputs()
+int32 AGGPOGameStateBase::GetLocalInputs()
 {
 	
 	if(ABulletPlayerController* BulletController = Cast<ABulletPlayerController>(UGameplayStatics::GetPlayerController(GetWorld(),0)))
 	{
-		return BulletController->GetUEBulletInput();
+		return BulletController->GetBulletInput();
 	}
 	//else return blank
-	return FBulletInput {FVector(), FRotator(), false};
+	return 0;
 }
 
-void AGGPOGameStateBase::ggpoGame_RunFrame(FBulletInput local_input)
+void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 {
+	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::ggpoGame_RunFrame"));
+
 	GGPOErrorCode result = GGPO_OK;
 	int disconnect_flags;
-	FBulletInput inputs[GGPO_MAX_PLAYERS] = { FBulletInput() };
+	int32 inputs[GGPO_MAX_PLAYERS] = { 0 };
 
 	//D TODO: Non-game-state and localPlayerHandle
-	/*if (ngs.local_player_handle != GGPO_INVALID_HANDLE) {
-#if defined(SYNC_TEST)
-		local_input = rand(); // test: use random inputs to demonstrate sync testing
-#endif
+	if (ngs.local_player_handle != GGPO_INVALID_HANDLE) {
 		result = GGPONet::ggpo_add_local_input(ggpo, ngs.local_player_handle, &local_input, sizeof(local_input));
-	}*/
+	}
 
 	// synchronize these inputs with ggpo.  If we have enough input to proceed
 	// ggpo will modify the input list with the correct inputs to use and return 1.
 	if (GGPO_SUCCEEDED(result)) {
-		result = GGPONet::ggpo_synchronize_input(ggpo, inputs, sizeof(FBulletInput) * GGPO_MAX_PLAYERS, &disconnect_flags);
+		result = GGPONet::ggpo_synchronize_input(ggpo, inputs, sizeof(int32) * GGPO_MAX_PLAYERS, &disconnect_flags);
 		if (GGPO_SUCCEEDED(result)) {
 			// inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
 			// the game by 1 frame using those inputs.
@@ -133,15 +177,17 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(FBulletInput local_input)
 	}
 }
 
-void AGGPOGameStateBase::ggpoGame_AdvanceFrame(FBulletInput inputs[], int32 disconnect_flags)
+void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags)
 {
-	gs.Update();
+	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::ggpoGame_AdvanceFrame"));
+
+	gs.Update(inputs, disconnect_flags);
 	
-	/*// update the checksums to display in the top of the window.  this
+	// update the checksums to display in the top of the window.  this
 	// helps to detect desyncs.
-	ngs.now.framenumber = gs._framenumber;
+	ngs.now.framenumber = gs.FrameNumber;
 	ngs.now.checksum = fletcher32_checksum((short*)&gs, sizeof(gs) / 2);
-	if ((gs._framenumber % 90) == 0) {
+	if ((gs.FrameNumber % 90) == 0) {
 		ngs.periodic = ngs.now;
 	}
 
@@ -155,19 +201,26 @@ void AGGPOGameStateBase::ggpoGame_AdvanceFrame(FBulletInput inputs[], int32 disc
 		if (ngs.players[i].type == EGGPOPlayerType::REMOTE) {
 			handles[count++] = ngs.players[i].handle;
 		}
-	}*/
+	}
 }
 
 void AGGPOGameStateBase::ggpoGame_Idle(int32 time)
 {
+	GGPONet::ggpo_idle(ggpo, time);
 }
 
 void AGGPOGameStateBase::ggpoGame_Exit()
 {
+	gs.OnDestroy();
+	if (ggpo) {
+		GGPONet::ggpo_close_session(ggpo);
+		ggpo = NULL;
+	}
 }
 
 bool AGGPOGameStateBase::TryStartGGPOPlayerSession(int32 NumPlayers, const UGGPONetwork* NetworkAddresses)
 {
+	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::TryStartGGPOPlayerSession"));
 	int32 Offset = 0;
 	GGPOPlayer Players[GGPO_MAX_SPECTATORS + GGPO_MAX_PLAYERS];
 	int32 NumSpectators = 0;
@@ -201,6 +254,7 @@ bool AGGPOGameStateBase::TryStartGGPOPlayerSession(int32 NumPlayers, const UGGPO
 			// The local player
 			if (i == NetworkAddresses->GetPlayerIndex()) {
 				Players[i].type = EGGPOPlayerType::LOCAL;
+				LocalPlayerIndex = i;
 				continue;
 			}
 
@@ -230,20 +284,45 @@ bool AGGPOGameStateBase::TryStartGGPOPlayerSession(int32 NumPlayers, const UGGPO
 
 void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlayer* players, int32 num_spectators)
 {
-	gs.Init();
-	/*GGPOErrorCode result;
+	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::Game_Init"));
 
 	// Initialize the game state
 	gs.Init(num_players);
+	
+	if(APhysicsWorldActor* PhysWorldActor = Cast<APhysicsWorldActor>(UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass())))
+	{
+		PhysWorldActor->InitPhysWorld();
+		/*if(PlayerPawns.Num() > 0)
+		{
+			for (APlayerPawn* pawn : PlayerPawns)
+			{
+				PhysWorldActor->AddPhysicsPlayer(pawn);
+			}
+			UGameplayStatics::GetPlayerController(GetWorld(), 0)->Possess(PlayerPawns[LocalPlayerIndex]);
+			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Possed Pawn#: %d"), LocalPlayerIndex));
+		}*/
+		FActorSpawnParameters SpawnInfo;
+		FVector SpawnLoc = FVector(0,0,150);
+		FRotator SpawnRot = FRotator();
+		for (int i = 0; i < gs.NumPlayers; i++)
+		{
+			SpawnLoc.Y = 200*i; //offset pos
+			PlayerPawns.Add(GetWorld()->SpawnActor<APlayerPawn>(PawnClass, SpawnLoc, SpawnRot, SpawnInfo));
+			PhysWorldActor->AddPhysicsPlayer(PlayerPawns.Last());
+		}
+	}
+	
+	GGPOErrorCode result;
+
 	ngs.num_players = num_players;
 
 	// Fill in a ggpo callbacks structure to pass to start_session.
 	GGPOSessionCallbacks cb = CreateCallbacks();
 
 #if defined(SYNC_TEST)
-	result = GGPONet::ggpo_start_synctest(&ggpo, &cb, "ggpoGame", num_players, sizeof(int), 1);
+	result = GGPONet::ggpo_start_synctest(&ggpo, &cb, "ggpoGame", num_players, sizeof(int32), 1);
 #else
-	result = GGPONet::ggpo_start_session(&ggpo, &cb, "ggpoGame", num_players, sizeof(int), localport);
+	result = GGPONet::ggpo_start_session(&ggpo, &cb, "ggpoGame", num_players, sizeof(int32), localport);
 #endif
 
 	// automatically disconnect clients after 3000 ms and start our count-down timer
@@ -252,7 +331,7 @@ void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlay
 	GGPONet::ggpo_set_disconnect_timeout(ggpo, 3000);
 	GGPONet::ggpo_set_disconnect_notify_start(ggpo, 1000);
 
-	//int i;
+	
 	for (int i = 0; i < num_players + num_spectators; i++) {
 		GGPOPlayerHandle handle;
 		result = GGPONet::ggpo_add_player(ggpo, players + i, &handle);
@@ -263,13 +342,14 @@ void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlay
 			ngs.local_player_handle = handle;
 			ngs.SetConnectState(handle, EPlayerConnectState::Connecting);
 			GGPONet::ggpo_set_frame_delay(ggpo, handle, FRAME_DELAY);
+
 		}
 		else {
 			ngs.players[i].connect_progress = 0;
 		}
 	}
 
-	GGPONet::ggpo_try_synchronize_local(ggpo);*/
+	GGPONet::ggpo_try_synchronize_local(ggpo);
 }
 
 GGPOSessionCallbacks AGGPOGameStateBase::CreateCallbacks()
@@ -294,18 +374,18 @@ bool AGGPOGameStateBase::ggpoGame_begin_game_callback(const char*)
 }
 bool AGGPOGameStateBase::ggpoGame_save_game_state_callback(unsigned char** buffer, int32* len, int32* checksum, int32)
 {
-    /**len = sizeof(gs);
+    *len = sizeof(gs);
     *buffer = (unsigned char*)malloc(*len);
     if (!*buffer) {
         return false;
     }
     memcpy(*buffer, &gs, *len);
-    *checksum = fletcher32_checksum((short*)*buffer, *len / 2);*/
+    *checksum = fletcher32_checksum((short*)*buffer, *len / 2);
     return true;
 }
 bool AGGPOGameStateBase::ggpoGame_load_game_state_callback(unsigned char* buffer, int32 len)
 {
-    /*memcpy(&gs, buffer, len);*/
+    memcpy(&gs, buffer, len);
     return true;
 }
 bool AGGPOGameStateBase::ggpoGame_log_game_state(char* filename, unsigned char* buffer, int32)
@@ -345,18 +425,18 @@ void AGGPOGameStateBase::ggpoGame_free_buffer(void* buffer)
 }
 bool AGGPOGameStateBase::ggpoGame_advance_frame_callback(int32)
 {
-    /*int inputs[MAX_SHIPS] = { 0 };
+    int32 inputs[4] = { 0 };
     int disconnect_flags;
 
     // Make sure we fetch new inputs from GGPO and use those to update
     // the game state instead of reading from the keyboard.
-    GGPONet::ggpo_synchronize_input(ggpo, (void*)inputs, sizeof(int) * MAX_SHIPS, &disconnect_flags);
-    VectorWar_AdvanceFrame(inputs, disconnect_flags);*/
+    GGPONet::ggpo_synchronize_input(ggpo, (void*)inputs, sizeof(int32) * 4, &disconnect_flags);
+    ggpoGame_AdvanceFrame(inputs, disconnect_flags);
     return true;
 }
 bool AGGPOGameStateBase::ggpoGame_on_event_callback(GGPOEvent* info)
 {
-    /*int progress;
+    int progress;
     switch (info->code) {
     case GGPO_EVENTCODE_CONNECTED_TO_PEER:
         ngs.SetConnectState(info->u.connected.player, EPlayerConnectState::Synchronizing);
@@ -385,6 +465,6 @@ bool AGGPOGameStateBase::ggpoGame_on_event_callback(GGPOEvent* info)
     case GGPO_EVENTCODE_TIMESYNC:
         Sleep(1000 * info->u.timesync.frames_ahead / 60);
         break;
-    }*/
+    }
     return true;
 }

@@ -13,5 +13,6 @@ UCLASS()
 class SERVERROLLBACK_API AGGPOGameModeBase : public AGameModeBase
 {
 	GENERATED_BODY()
-	
+public:
+	AGGPOGameModeBase();
 };

@@ -1,6 +1,13 @@
 #pragma once
 #include "BulletMinimal.h"
 
+// UE4: allow Windows platform types to avoid naming collisions
+//  this must be undone at the bottom of this file
+#include "Windows/AllowWindowsPlatformTypes.h"
+#include "Windows/prewindowsapi.h"
+
+#include <windef.h>
+
 class btDiscreteDynamicsWorld;
 
 //Contains All bulletphysics data
@@ -50,13 +57,21 @@ public:
 	//Player Controller?
 	//Other Bullet Stuff?
 
-	void Init();
-	void Update();
+	void Init(int NumPlayers_);
+	void ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
+	void ApplyInputToPlayer(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
+	void Update(int inputs[], int disconnect_flags);
 
-	~GameState();
+	void OnDestroy();
 
 	int FrameNumber = 0;
+	int NumPlayers = 1;
 	BulletPhysics Bullet;
 private:
 	void InitBullet();
 };
+
+// UE4: disallow windows platform types
+//  this was enabled at the top of the file
+#include "Windows/PostWindowsApi.h"
+#include "Windows/HideWindowsPlatformTypes.h"

@@ -58,17 +58,6 @@ void APlayerPawn::BeginPlay()
 	FAttachmentTransformRules AttachmentRules(EAttachmentRule::SnapToTarget, true);
 	GunMesh->AttachToComponent(FPSMesh, AttachmentRules, FName(TEXT("GripPoint")));
 	
-	if (auto* PlayerController = Cast<APlayerController>(Controller))
-	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
-		{
-			if(DefaultMappingContext)
-			{
-				Subsystem->AddMappingContext(DefaultMappingContext, 0);
-			}
-		}
-	}
-	
 	BulletWorldActor = CastChecked<APhysicsWorldActor>(UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass()));
 	PlayerBody = BulletWorldActor->AddPhysicsPlayer(this);
 }
@@ -78,7 +67,7 @@ void APlayerPawn::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	FBulletInput Input;
+	/*FBulletInput Input;
 	if(ABulletPlayerController* BulletController = Cast<ABulletPlayerController>(Controller))
 	{
 		Input = BulletController->GetUEBulletInput();
@@ -109,12 +98,12 @@ void APlayerPawn::Tick(float DeltaTime)
 	}
 
 	
-	PlayerBody->setLinearVelocity(BodyVel);
+	PlayerBody->setLinearVelocity(BodyVel);*/
 	
 }
 
 // Called to bind functionality to input
-void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+/*void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	
@@ -138,9 +127,9 @@ void APlayerPawn::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Completed, this, &APlayerPawn::StopFiring);
 
 	}
-}
+}*/
 
-void APlayerPawn::Move(const FInputActionValue& Value)
+/*void APlayerPawn::Move(const FInputActionValue& Value)
 {
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
@@ -213,7 +202,7 @@ void APlayerPawn::Fire()
 	btVector3 To = From + CamDir;
 	
 	btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
-	BulletWorldActor->GGPOGameStateBase->GetGameState().Bullet.BtWorld->rayTest(From, To, rayCallback);
+	BulletWorldActor->GGPOGameStateBase->gs.Bullet.BtWorld->rayTest(From, To, rayCallback);
 
 	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Fired"));
 	DrawDebugLine(GetWorld(), BulletHelpers::ToUEPos(From,BulletWorldActor->GetActorLocation()), BulletHelpers::ToUEPos(To,BulletWorldActor->GetActorLocation()),FColor::Green, false, 1.f, 0, 1);
@@ -259,7 +248,7 @@ void APlayerPawn::StopFiring()
 		BulletController->CurrentInput.bInputFire = false;
 		//BulletController->GetUEBulletInput();
 	}
-}
+}*/
 
 bool APlayerPawn::IsGrounded()
 {
@@ -271,7 +260,7 @@ bool APlayerPawn::IsGrounded()
 	btVector3 To = From + Offset;
 	
 	btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
-	BulletWorldActor->GGPOGameStateBase->GetGameState().Bullet.BtWorld->rayTest(btPlayerTransform.getOrigin(), To, rayCallback);
+	BulletWorldActor->GGPOGameStateBase->gs.Bullet.BtWorld->rayTest(btPlayerTransform.getOrigin(), To, rayCallback);
 	
 	//if standing on something
 	if(rayCallback.hasHit())

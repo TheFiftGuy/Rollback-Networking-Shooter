@@ -4,8 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Pawn.h"
-#include "InputActionValue.h"
-#include "InputMappingContext.h"
 #include "PlayerPawn.generated.h"
 
 
@@ -14,7 +12,6 @@ class USkeletalMeshComponent;
 class UCameraComponent;
 class APhysicsWorldActor;
 class btRigidBody;
-class UInputAction;
 
 UCLASS()
 class SERVERROLLBACK_API APlayerPawn : public APawn
@@ -34,7 +31,7 @@ public:
 	virtual void Tick(float DeltaTime) override;
 
 	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	//virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	const UCapsuleComponent* GetCapsuleComponent() const { return CapsuleComponent; }
 
@@ -60,25 +57,25 @@ private:
 	TObjectPtr<UCameraComponent> Camera;
 
 public:
-	//Input
+	/*//Input
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputMappingContext* DefaultMappingContext;
 	
-	/** Jump Input Action */
+	/** Jump Input Action #1#
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* JumpAction;
 
-	/** Move Input Action */
+	/** Move Input Action #1#
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
 
-	/** Look Input Action */
+	/** Look Input Action #1#
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* LookAction;
 
-	/** Fire Input Action */
+	/** Fire Input Action #1#
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
-	UInputAction* FireAction;
+	UInputAction* FireAction;*/
 
 private:
 	//Bullet Stuff
@@ -88,20 +85,22 @@ private:
 	
 protected:
 	/** Called for movement input */
+	/*
 	void Move(const FInputActionValue& Value);
 
-	/** Called for looking input */
+	/** Called for looking input #1#
 	void Look(const FInputActionValue& Value);
 
-	/** Called for jumping input */
+	/** Called for jumping input #1#
 	void Jump(const FInputActionValue& Value);
 	
-	/** Called for Fire/Shoot input */
+	/** Called for Fire/Shoot input #1#
 	void Fire();
 
 	void StopMoving();
 	void StopJumping();
 	void StopFiring();
+	*/
 
 	bool IsGrounded();
 };
