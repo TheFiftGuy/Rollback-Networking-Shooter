@@ -61,6 +61,7 @@ public:
 	//Other Bullet Stuff?
 
 	void Init(int NumPlayers_);
+	void GetPlayerAI(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
 	void ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
 	void ApplyInputToPlayer(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
 	void Update(int inputs[], int disconnect_flags);

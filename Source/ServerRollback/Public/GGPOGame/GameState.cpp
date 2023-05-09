@@ -11,6 +11,15 @@ void GameState::Init(int NumPlayers_)
 	InitBullet();
 }
 
+void GameState::GetPlayerAI(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
+{
+	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Get Player %d AI."), PlayerIndex));
+
+	*outPlayerMovement = BulletHelpers::ToUEDir(Bullet.BtPlayerBodies[PlayerIndex]->getLinearVelocity()/10, false);
+	*outMouseDelta = FVector2D(0);
+	*outFire = false;
+}
+
 void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
 {
 	bool Forwards = Inputs & INPUT_FORWARDS;
@@ -73,8 +82,12 @@ void GameState::Update(int inputs[], int disconnect_flags)
 		FVector PlayerMovement = FVector();
 		FVector2D MouseDelta = FVector2D();
 		bool Fire = false;
-		
-		ParsePlayerInputs(inputs[i], i, &PlayerMovement, &MouseDelta, &Fire);
+
+		if (disconnect_flags & (1 << i)) {
+			GetPlayerAI(i, &PlayerMovement, &MouseDelta, &Fire);
+		} else {
+			ParsePlayerInputs(inputs[i], i, &PlayerMovement, &MouseDelta, &Fire);
+		}
 		
 		ApplyInputToPlayer(i, &PlayerMovement, &MouseDelta, &Fire);
 	}

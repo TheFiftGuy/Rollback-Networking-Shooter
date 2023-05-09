@@ -58,7 +58,7 @@ void AGGPOGameStateBase::BeginPlay()
 void AGGPOGameStateBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::Tick"));
+	//UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::Tick"));
 
 	MSG msg = { 0 };
 
@@ -73,7 +73,19 @@ void AGGPOGameStateBase::Tick(float DeltaSeconds)
 	ggpoGame_Idle(FMath::Max(0, IdleMs - 1));
 	while (ElapsedTime >= ONE_FRAME) {
 		TickGameState();
+
 		ElapsedTime -= ONE_FRAME;
+	}
+}
+
+void AGGPOGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+	if (bSessionStarted)
+	{
+		ggpoGame_Exit();
+
+		bSessionStarted = false;
 	}
 }
 
@@ -87,7 +99,9 @@ void AGGPOGameStateBase::OnSessionStarted_Implementation()
 		SpawnLoc.X = 100*i; //offset pos
 		PlayerPawns.Add(GetWorld()->SpawnActor<APlayerPawn>(PawnClass, SpawnLoc, SpawnRot, SpawnInfo));
 	}*/
+	//connects the player to the pawn (camera)
 	if(PlayerPawns.Num() > 0)	{
+		//UGameplayStatics::GetPlayerController(GetWorld(), 0)->UnPossess();
 		UGameplayStatics::GetPlayerController(GetWorld(), 0)->Possess(PlayerPawns[LocalPlayerIndex]);
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Possed Pawn#: %d"), LocalPlayerIndex));
 	}
@@ -96,7 +110,7 @@ void AGGPOGameStateBase::OnSessionStarted_Implementation()
 
 void AGGPOGameStateBase::TickGameState()
 {
-	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::TickGameState()"));
+	//UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::TickGameState()"));
 
 	int32 Input = GetLocalInputs();
 	ggpoGame_RunFrame(Input);
@@ -154,7 +168,7 @@ int32 AGGPOGameStateBase::GetLocalInputs()
 
 void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::ggpoGame_RunFrame"));
+//	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::ggpoGame_RunFrame"));
 
 	GGPOErrorCode result = GGPO_OK;
 	int disconnect_flags;
@@ -168,7 +182,7 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 	// synchronize these inputs with ggpo.  If we have enough input to proceed
 	// ggpo will modify the input list with the correct inputs to use and return 1.
 	if (GGPO_SUCCEEDED(result)) {
-		result = GGPONet::ggpo_synchronize_input(ggpo, inputs, sizeof(int32) * GGPO_MAX_PLAYERS, &disconnect_flags);
+		result = GGPONet::ggpo_synchronize_input(ggpo, (void*)inputs, sizeof(int) * GGPO_MAX_PLAYERS, &disconnect_flags);
 		if (GGPO_SUCCEEDED(result)) {
 			// inputs[0] and inputs[1] contain the inputs for p1 and p2.  Advance
 			// the game by 1 frame using those inputs.
@@ -179,7 +193,7 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 
 void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags)
 {
-	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::ggpoGame_AdvanceFrame"));
+	//UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::ggpoGame_AdvanceFrame"));
 
 	gs.Update(inputs, disconnect_flags);
 	
@@ -212,6 +226,8 @@ void AGGPOGameStateBase::ggpoGame_Idle(int32 time)
 void AGGPOGameStateBase::ggpoGame_Exit()
 {
 	gs.OnDestroy();
+	memset(&gs, 0, sizeof(gs));
+	memset(&ngs, 0, sizeof(ngs));
 	if (ggpo) {
 		GGPONet::ggpo_close_session(ggpo);
 		ggpo = NULL;
@@ -285,9 +301,11 @@ bool AGGPOGameStateBase::TryStartGGPOPlayerSession(int32 NumPlayers, const UGGPO
 void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlayer* players, int32 num_spectators)
 {
 	UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::Game_Init"));
-
+	
+	GGPOErrorCode result;
 	// Initialize the game state
 	gs.Init(num_players);
+	ngs.num_players = num_players;
 	
 	if(APhysicsWorldActor* PhysWorldActor = Cast<APhysicsWorldActor>(UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass())))
 	{
@@ -314,20 +332,25 @@ void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlay
 			UE_LOG(LogTemp, Warning, TEXT("Added Player Body"));
 		}
 	}
-	
-	GGPOErrorCode result;
-
-	ngs.num_players = num_players;
-
 	// Fill in a ggpo callbacks structure to pass to start_session.
 	GGPOSessionCallbacks cb = CreateCallbacks();
 
 #if defined(SYNC_TEST)
-	result = GGPONet::ggpo_start_synctest(&ggpo, &cb, "ggpoGame", num_players, sizeof(int32), 1);
+	result = GGPONet::ggpo_start_synctest(&ggpo, &cb, "ggpoGame", num_players, sizeof(int), 1);
 #else
-	result = GGPONet::ggpo_start_session(&ggpo, &cb, "ggpoGame", num_players, sizeof(int32), localport);
+	result = GGPONet::ggpo_start_session(&ggpo, &cb, "ggpoGame", num_players, sizeof(int), localport);
 #endif
 
+	if(result == GGPO_OK)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ggpo_start_session OK"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("ggpo_start_session NOT ok"));
+
+	}
+	
 	// automatically disconnect clients after 3000 ms and start our count-down timer
 	// for disconnects after 1000 ms.   To completely disable disconnects, simply use
 	// a value of 0 for ggpo_set_disconnect_timeout.
@@ -428,12 +451,12 @@ void AGGPOGameStateBase::ggpoGame_free_buffer(void* buffer)
 }
 bool AGGPOGameStateBase::ggpoGame_advance_frame_callback(int32)
 {
-    int32 inputs[4] = { 0 };
+    int inputs[4] = { 0 };
     int disconnect_flags;
 
     // Make sure we fetch new inputs from GGPO and use those to update
     // the game state instead of reading from the keyboard.
-    GGPONet::ggpo_synchronize_input(ggpo, (void*)inputs, sizeof(int32) * 4, &disconnect_flags);
+    GGPONet::ggpo_synchronize_input(ggpo, (void*)inputs, sizeof(int) * 4, &disconnect_flags);
     ggpoGame_AdvanceFrame(inputs, disconnect_flags);
     return true;
 }
