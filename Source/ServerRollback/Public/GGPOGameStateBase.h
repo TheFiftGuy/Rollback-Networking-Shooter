@@ -24,8 +24,10 @@ private:
 	bool bSessionStarted;
 	float ElapsedTime = 0.f;
 
+	TArray<GameState> PastStates;
+
 public:
-	GameState gs = { 0 };
+	GameState gs = {0,1};
 
 	UPROPERTY(Category="Player",EditAnywhere,BlueprintReadWrite)
 	TSubclassOf<APlayerPawn> PawnClass;
