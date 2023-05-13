@@ -50,15 +50,6 @@ struct BulletPhysics	{
 		btVector3 Inertia; // because we like to precalc this
 	};
 	TArray<CachedDynamicShapeData> CachedDynamicShapes;
-
-
-	BulletPhysics();
-	~BulletPhysics();
-	
-	//Copy Constructor
-	BulletPhysics(const BulletPhysics& Other);
-	BulletPhysics& operator=(const BulletPhysics& Other);
-	
 };
 
 struct GameState

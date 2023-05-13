@@ -159,18 +159,7 @@ void APhysicsWorldActor::Tick(float DeltaTime)
 #if WITH_EDITORONLY_DATA
 	if (bPhysicsShowDebug)
 	{
-		if(GGPOGameStateBase->gs.Bullet.BtWorld->getDebugDrawer())
-		{
-			GGPOGameStateBase->gs.Bullet.BtWorld->debugDrawWorld();
-		}
-		else
-		{
-			//re-set
-			GGPOGameStateBase->gs.Bullet.BtWorld->setDebugDrawer(BtDebugDraw);
-			GGPOGameStateBase->gs.Bullet.BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
-			//then draw
-			GGPOGameStateBase->gs.Bullet.BtWorld->debugDrawWorld();
-		}
+		GGPOGameStateBase->gs.Bullet.BtWorld->debugDrawWorld();
 		//BtDebugDraw->drawLine(btVector3(0.0, 0.0, 0.0), btVector3(100.0f, 100.0f, 100.0f), btVector3(255,0,0));
 
 		//DrawDebugSphere(GetWorld(), BulletHelpers::ToUEPos(BtRigidBodies.Last()->getWorldTransform().getOrigin(), GetActorLocation()), 50.0f, 4, FColor::Red, false, 1, 0, 2);

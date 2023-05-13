@@ -5,132 +5,6 @@
 #include "BulletDebugDraw.h"
 #include "GGPOGame.h"
 
-BulletPhysics::BulletPhysics()
-{
-	// This is all pretty standard Bullet bootstrap
-	// This is all pretty standard Bullet bootstrap
-	BtCollisionConfig = new btDefaultCollisionConfiguration();
-	BtCollisionDispatcher = new btCollisionDispatcher (BtCollisionConfig);
-	BtBroadphase = new btDbvtBroadphase ();
-	BtConstraintSolver = new btSequentialImpulseConstraintSolver();
-	BtWorld = new btDiscreteDynamicsWorld (BtCollisionDispatcher, BtBroadphase, BtConstraintSolver, BtCollisionConfig);
-
-}
-
-BulletPhysics::~BulletPhysics()
-{
-	if(BtWorld)
-	{
-		if(BtWorld->getNumCollisionObjects() - 1 >= 0)
-		{
-			for (int i = BtWorld->getNumCollisionObjects() - 1; i >= 0; i--)
-			{
-				btCollisionObject* obj = BtWorld->getCollisionObjectArray()[i];
-				btRigidBody* body = btRigidBody::upcast(obj);
-				if (body && body->getMotionState())
-				{
-					delete body->getMotionState();
-				}
-				BtWorld->removeCollisionObject(obj);
-				delete obj;
-			}
-		}
-	}
-	
-	
-	// delete collision shapes
-	for (int i = 0; i < BtBoxCollisionShapes.Num(); i++)
-		delete BtBoxCollisionShapes[i];
-	BtBoxCollisionShapes.Empty();
-	for (int i = 0; i < BtSphereCollisionShapes.Num(); i++)
-		delete BtSphereCollisionShapes[i];
-	BtSphereCollisionShapes.Empty();
-	for (int i = 0; i < BtCapsuleCollisionShapes.Num(); i++)
-		delete BtCapsuleCollisionShapes[i];
-	BtCapsuleCollisionShapes.Empty();
-	for (int i = 0; i < BtConvexHullCollisionShapes.Num(); i++)
-		delete BtConvexHullCollisionShapes[i].Shape;
-	BtConvexHullCollisionShapes.Empty();
-	for (int i = 0; i < CachedDynamicShapes.Num(); i++)
-	{
-		// Only delete if this is a compound shape, otherwise it's an alias to other simple arrays
-		if (CachedDynamicShapes[i].bIsCompound)
-			delete CachedDynamicShapes[i].Shape;
-	}
-	CachedDynamicShapes.Empty();
-
-	delete BtWorld;
-	delete BtConstraintSolver;
-	delete BtBroadphase;
-	delete BtCollisionDispatcher;
-	delete BtCollisionConfig;
-	//delete BtDebugDraw;
-
-	BtWorld = nullptr;
-	BtConstraintSolver = nullptr;
-	BtBroadphase = nullptr;
-	BtCollisionDispatcher = nullptr;
-	BtCollisionConfig = nullptr;
-	//BtDebugDraw = nullptr;
-
-	// Clear our type-specific arrays (duplicate refs)
-	BtStaticObjects.Empty();
-	BtRigidBodies.Empty();
-	BtPlayerBodies.Empty();
-}
-
-BulletPhysics::BulletPhysics(const BulletPhysics& Other)
-{
-	BtCollisionConfig		= new btDefaultCollisionConfiguration();
-	BtCollisionDispatcher	= new btCollisionDispatcher (BtCollisionConfig);
-	BtBroadphase			= new btDbvtBroadphase ();
-	BtConstraintSolver		= new btSequentialImpulseConstraintSolver();
-	BtWorld					= new btDiscreteDynamicsWorld (BtCollisionDispatcher, BtBroadphase, BtConstraintSolver, BtCollisionConfig);
-	
-	*BtCollisionConfig		= *Other.BtCollisionConfig;
-	*BtCollisionDispatcher	= *Other.BtCollisionDispatcher;
-	*BtBroadphase			= *Other.BtBroadphase;
-	*BtConstraintSolver		= *Other.BtConstraintSolver;
-	*BtWorld				= *Other.BtWorld;
-
-	
-	BtRigidBodies				= Other.BtRigidBodies;
-	BtPlayerBodies				= Other.BtPlayerBodies;
-	BtStaticObjects				= Other.BtStaticObjects;
-	BtBoxCollisionShapes		= Other.BtBoxCollisionShapes;
-	BtSphereCollisionShapes		= Other.BtSphereCollisionShapes;
-	BtCapsuleCollisionShapes	= Other.BtCapsuleCollisionShapes;
-	BtConvexHullCollisionShapes = Other.BtConvexHullCollisionShapes;
-	CachedDynamicShapes			= Other.CachedDynamicShapes;
-}
-
-BulletPhysics& BulletPhysics::operator=(const BulletPhysics& Other)
-{
-	BtCollisionConfig		= new btDefaultCollisionConfiguration();
-	BtCollisionDispatcher	= new btCollisionDispatcher (BtCollisionConfig);
-	BtBroadphase			= new btDbvtBroadphase ();
-	BtConstraintSolver		= new btSequentialImpulseConstraintSolver();
-	BtWorld					= new btDiscreteDynamicsWorld (BtCollisionDispatcher, BtBroadphase, BtConstraintSolver, BtCollisionConfig);
-	
-	*BtCollisionConfig		= *Other.BtCollisionConfig;
-	*BtCollisionDispatcher	= *Other.BtCollisionDispatcher;
-	*BtBroadphase			= *Other.BtBroadphase;
-	*BtConstraintSolver		= *Other.BtConstraintSolver;
-	*BtWorld				= *Other.BtWorld;
-
-	
-	BtRigidBodies				= Other.BtRigidBodies;
-	BtPlayerBodies				= Other.BtPlayerBodies;
-	BtStaticObjects				= Other.BtStaticObjects;
-	BtBoxCollisionShapes		= Other.BtBoxCollisionShapes;
-	BtSphereCollisionShapes		= Other.BtSphereCollisionShapes;
-	BtCapsuleCollisionShapes	= Other.BtCapsuleCollisionShapes;
-	BtConvexHullCollisionShapes = Other.BtConvexHullCollisionShapes;
-	CachedDynamicShapes			= Other.CachedDynamicShapes;
-
-	return *this;
-}
-
 void GameState::Init(int NumPlayers_)
 {
 	NumPlayers = NumPlayers_;
@@ -224,7 +98,7 @@ void GameState::Update(int inputs[], int disconnect_flags)
 
 void GameState::OnDestroy()
 {
-	/*if(Bullet.BtWorld)
+	if(Bullet.BtWorld)
 	{
 		if(Bullet.BtWorld->getNumCollisionObjects() - 1 >= 0)
 		{
@@ -281,12 +155,17 @@ void GameState::OnDestroy()
 	// Clear our type-specific arrays (duplicate refs)
 	Bullet.BtStaticObjects.Empty();
 	Bullet.BtRigidBodies.Empty();
-	Bullet.BtPlayerBodies.Empty();*/
+	Bullet.BtPlayerBodies.Empty();
 }
 
 void GameState::InitBullet()
 {
-
+	// This is all pretty standard Bullet bootstrap
+	Bullet.BtCollisionConfig = new btDefaultCollisionConfiguration();
+	Bullet.BtCollisionDispatcher = new btCollisionDispatcher (Bullet.BtCollisionConfig);
+	Bullet.BtBroadphase = new btDbvtBroadphase ();
+	Bullet.BtConstraintSolver = new btSequentialImpulseConstraintSolver();
+	Bullet.BtWorld = new btDiscreteDynamicsWorld (Bullet.BtCollisionDispatcher, Bullet.BtBroadphase, Bullet.BtConstraintSolver, Bullet.BtCollisionConfig);
 
 	// I mess with a few settings on BtWorld->getSolverInfo() but they're specific to my needs	
 

@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+
 #include "GGPOGameStateBase.h"
 #include "GGPOGameInstance.h"
 #include "BulletPlayerController.h"
@@ -12,7 +13,6 @@
 AGGPOGameStateBase::AGGPOGameStateBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	PastStates.Reserve(10);
 }
 
 void AGGPOGameStateBase::BeginPlay()
@@ -193,7 +193,7 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 
 void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%d Advance Frame, Frame# %d++."), LocalPlayerIndex, gs.FrameNumber);
+	//UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::ggpoGame_AdvanceFrame"));
 
 	gs.Update(inputs, disconnect_flags);
 	
@@ -400,9 +400,6 @@ bool AGGPOGameStateBase::ggpoGame_begin_game_callback(const char*)
 }
 bool AGGPOGameStateBase::ggpoGame_save_game_state_callback(unsigned char** buffer, int32* len, int32* checksum, int32)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%d Saving State, Frame# %d."), LocalPlayerIndex, gs.FrameNumber);
-
-
     *len = sizeof(gs);
     *buffer = (unsigned char*)malloc(*len);
     if (!*buffer) {
@@ -410,25 +407,11 @@ bool AGGPOGameStateBase::ggpoGame_save_game_state_callback(unsigned char** buffe
     }
     memcpy(*buffer, &gs, *len);
     *checksum = fletcher32_checksum((short*)*buffer, *len / 2);
-	PastStates.Add(gs);
-	
     return true;
 }
 bool AGGPOGameStateBase::ggpoGame_load_game_state_callback(unsigned char* buffer, int32 len)
 {
     memcpy(&gs, buffer, len);
-	UE_LOG(LogTemp, Warning, TEXT("%d Looking to Load State #%d"), LocalPlayerIndex, gs.FrameNumber);
-
-	for(int i = 0; i <PastStates.Num(); i++)
-	{
-		if(gs.FrameNumber == PastStates[i].FrameNumber)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("%d Loaded State #%d, Frame# %d."), LocalPlayerIndex, i, gs.FrameNumber);
-			//UE version of std::move
-			gs.Bullet = PastStates[i].Bullet;
-			break;
-		}
-	}
     return true;
 }
 bool AGGPOGameStateBase::ggpoGame_log_game_state(char* filename, unsigned char* buffer, int32)
@@ -464,14 +447,7 @@ bool AGGPOGameStateBase::ggpoGame_log_game_state(char* filename, unsigned char* 
 }
 void AGGPOGameStateBase::ggpoGame_free_buffer(void* buffer)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%d Deleting Oldest State, Frame# %d."), LocalPlayerIndex, PastStates[0].FrameNumber);
     free(buffer);
-	if(!PastStates.IsEmpty())
-	{
-		//PastStates[0].OnDestroy();
-		PastStates.RemoveAt(0);
-	}
-
 }
 bool AGGPOGameStateBase::ggpoGame_advance_frame_callback(int32)
 {
