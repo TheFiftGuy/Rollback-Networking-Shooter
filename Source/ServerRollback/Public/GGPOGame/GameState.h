@@ -1,12 +1,13 @@
 #pragma once
 #include "BulletMinimal.h"
-
+#include <BulletDynamics/Dynamics/btRigidBody.h>
 // UE4: allow Windows platform types to avoid naming collisions
 //  this must be undone at the bottom of this file
 #include "Windows/AllowWindowsPlatformTypes.h"
 #include "Windows/prewindowsapi.h"
 
 #include <windef.h>
+
 
 class APlayerPawn;
 class btDiscreteDynamicsWorld;
@@ -68,11 +69,21 @@ public:
 
 	void OnDestroy();
 
+
 	int FrameNumber = 0;
 	int NumPlayers = 1;
 	BulletPhysics Bullet;
+	//Contains PlayerBodiesData, then rest of bodiesData
+	TArray<btRigidBodyFloatData> BtBodyData;
 private:
 	void InitBullet();
+	
+	//pre-simulate load data
+	int LoadBtBodyData();
+	//post-simulate save data
+	int SaveBtBodyData();
+
+	void DeSerializeBtBodyData(btRigidBody* OutBody, const btRigidBodyFloatData& InData);
 };
 
 // UE4: disallow windows platform types

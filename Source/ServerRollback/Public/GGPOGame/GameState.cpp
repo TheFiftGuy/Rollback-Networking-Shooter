@@ -75,9 +75,19 @@ void GameState::ApplyInputToPlayer(int PlayerIndex, FVector* outPlayerMovement, 
 
 void GameState::Update(int inputs[], int disconnect_flags)
 {
-	//parse input
-	//move player
+	//If there are bodies missing from the BodyData, go get em. (Generally only happens on first tick).
+	if(BtBodyData.Num() < (Bullet.BtRigidBodies.Num() + Bullet.BtPlayerBodies.Num()))
+	{
+		SaveBtBodyData();
+	}
+	else
+	{
+		LoadBtBodyData();
+	}
+	
 	FrameNumber++;
+	//refresh Bullet sim with body data
+	
 	for (int i = 0; i < NumPlayers; i++) {
 		FVector PlayerMovement = FVector();
 		FVector2D MouseDelta = FVector2D();
@@ -94,6 +104,9 @@ void GameState::Update(int inputs[], int disconnect_flags)
 	
 	
 	Bullet.BtWorld->stepSimulation(btScalar(1.) / btScalar(60.), 0);
+
+	//save Bullet body data
+	SaveBtBodyData();
 }
 
 void GameState::OnDestroy()
@@ -171,4 +184,139 @@ void GameState::InitBullet()
 
 	// Gravity vector in our units (1=1cm)
 	Bullet.BtWorld->setGravity(BulletHelpers::ToBtDir(FVector(0, 0, -980)));
+
+	
 }
+
+int GameState::LoadBtBodyData()
+{
+	const int TotalBodies = Bullet.BtPlayerBodies.Num() + Bullet.BtRigidBodies.Num();
+	if(BtBodyData.Num() == TotalBodies)
+	{
+		for(int i = 0; i < TotalBodies; i++)	{
+			
+			if (i < Bullet.BtPlayerBodies.Num())	{
+				DeSerializeBtBodyData(Bullet.BtPlayerBodies[i], BtBodyData[i]);
+			}
+			else	{
+				DeSerializeBtBodyData(Bullet.BtRigidBodies[i - Bullet.BtPlayerBodies.Num()], BtBodyData[i]);
+			}
+		}
+	}
+	else	{
+		//incorrect num of bodies error
+		UE_LOG(LogTemp, Error, TEXT("LoadBtBodyData Error: Expected %d Bodies but have Data for %d bodies stored"), TotalBodies, BtBodyData.Num());
+		return 0;
+	}
+
+	return BtBodyData.Num();
+}
+
+int GameState::SaveBtBodyData()
+{
+	btDefaultSerializer* Serializer = new btDefaultSerializer();
+	const int TotalBodies = Bullet.BtPlayerBodies.Num() + Bullet.BtRigidBodies.Num();
+	//if missing bodies, do a full save
+	if(BtBodyData.Num() < (TotalBodies))	{
+		BtBodyData.Empty();
+		BtBodyData.Reserve(TotalBodies);
+		
+		for(int i = 0; i < Bullet.BtPlayerBodies.Num(); i++)
+		{
+			btRigidBodyFloatData Data;
+			Bullet.BtPlayerBodies[i]->serialize(&Data,Serializer);
+			/*Bullet.BtPlayerBodies[0]->getInvInertiaTensorWorld().serializeFloat(Data.m_invInertiaTensorWorld);
+			Bullet.BtPlayerBodies[0]->getLinearVelocity().serializeFloat(Data.m_linearVelocity);
+			Bullet.BtPlayerBodies[0]->getAngularVelocity().serializeFloat(Data.m_angularVelocity);
+			Bullet.BtPlayerBodies[0]->getAngularFactor().serializeFloat(Data.m_angularFactor);*/
+
+			BtBodyData.Add(Data);
+		}
+		for(int i = 0; i < Bullet.BtRigidBodies.Num(); i++)
+		{
+			btRigidBodyFloatData Data;
+			Bullet.BtRigidBodies[i]->serialize(&Data,Serializer);
+			BtBodyData.Add(Data);
+		}
+	}
+	//else just update current ones
+	else	{
+		for(int i = 0; i < TotalBodies; i++)	{
+			btRigidBodyFloatData Data;
+			
+			if (i < Bullet.BtPlayerBodies.Num())	{
+				Bullet.BtPlayerBodies[i]->serialize(&Data,Serializer);
+			}
+			else	{
+				Bullet.BtRigidBodies[i - Bullet.BtPlayerBodies.Num()]->serialize(&Data,Serializer);
+			}
+			
+			BtBodyData[i] = Data;
+		}
+	}
+
+	if(Serializer)
+	{
+		delete Serializer;
+		Serializer = nullptr;
+	}
+	return BtBodyData.Num();
+}
+
+void GameState::DeSerializeBtBodyData(btRigidBody* OutBody, const btRigidBodyFloatData& InData)
+{
+	btTransform transform = btTransform(); //used to convert data to usable transform
+	btVector3 vec3 = btVector3(); //used to convert data to usable vector
+	
+	//m_collisionObjectData section
+	//OutBody->setBroadphaseHandle((btBroadphaseProxy*) InData.m_collisionObjectData.m_broadphaseHandle);
+	//OutBody->setCollisionShape((btCollisionShape*) InData.m_collisionObjectData.m_collisionShape);
+
+	//OutBody->setWorldTransform(transform);
+	
+	/*transform.deSerializeFloat(InData.m_collisionObjectData.m_interpolationWorldTransform);
+	OutBody->setInterpolationWorldTransform(transform);
+	vec3.deSerializeFloat(InData.m_collisionObjectData.m_interpolationLinearVelocity);
+	OutBody->setInterpolationLinearVelocity(vec3);
+	vec3.deSerializeFloat(InData.m_collisionObjectData.m_interpolationAngularVelocity);
+	OutBody->setInterpolationAngularVelocity(vec3);*/
+	vec3.deSerializeFloat(InData.m_collisionObjectData.m_anisotropicFriction);
+	OutBody->setAnisotropicFriction(vec3, InData.m_collisionObjectData.m_hasAnisotropicFriction);
+
+	OutBody->setContactProcessingThreshold(InData.m_collisionObjectData.m_contactProcessingThreshold);
+	OutBody->setDeactivationTime(InData.m_collisionObjectData.m_deactivationTime);
+	OutBody->setFriction(InData.m_collisionObjectData.m_friction);
+	OutBody->setRollingFriction(InData.m_collisionObjectData.m_rollingFriction);
+	OutBody->setContactStiffnessAndDamping(InData.m_collisionObjectData.m_contactStiffness, InData.m_collisionObjectData.m_contactDamping);
+	OutBody->setRestitution(InData.m_collisionObjectData.m_restitution);
+	OutBody->setHitFraction(InData.m_collisionObjectData.m_hitFraction);
+	OutBody->setCcdSweptSphereRadius(InData.m_collisionObjectData.m_ccdSweptSphereRadius);
+	OutBody->setCcdMotionThreshold(InData.m_collisionObjectData.m_ccdMotionThreshold);
+	OutBody->setCollisionFlags(InData.m_collisionObjectData.m_collisionFlags);
+	OutBody->setIslandTag(InData.m_collisionObjectData.m_islandTag1);
+	OutBody->setCompanionId(InData.m_collisionObjectData.m_companionId);
+	OutBody->setActivationState(InData.m_collisionObjectData.m_activationState1);
+	
+	//General btRigidBody section
+	vec3.deSerializeFloat(InData.m_linearVelocity);
+	OutBody->setLinearVelocity(vec3);
+	vec3.deSerializeFloat(InData.m_angularVelocity);
+	OutBody->setAngularVelocity(vec3);
+	vec3.deSerializeFloat(InData.m_angularFactor);
+	OutBody->setAngularFactor(vec3);
+	vec3.deSerializeFloat(InData.m_linearFactor);
+	OutBody->setLinearFactor(vec3);
+	/*vec3.deSerializeFloat(InData.m_gravity);
+	OutBody->setGravity(vec3);//this also sets Grav_accel*/
+	/*vec3.deSerializeFloat(InData.m_invInertiaLocal);
+	OutBody->setInvInertiaDiagLocal(vec3);*/
+	
+	OutBody->setDamping(InData.m_linearDamping, InData.m_angularDamping);
+	OutBody->setSleepingThresholds(InData.m_linearSleepingThreshold, InData.m_angularSleepingThreshold);
+	//OutBody->updateInertiaTensor();
+
+	transform.deSerializeFloat(InData.m_collisionObjectData.m_worldTransform);
+	OutBody->setCenterOfMassTransform(transform);
+
+}
+
