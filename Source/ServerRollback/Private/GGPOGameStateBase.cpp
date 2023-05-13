@@ -173,9 +173,11 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 	GGPOErrorCode result = GGPO_OK;
 	int disconnect_flags;
 	int32 inputs[GGPO_MAX_PLAYERS] = { 0 };
-
-	//D TODO: Non-game-state and localPlayerHandle
+	
 	if (ngs.local_player_handle != GGPO_INVALID_HANDLE) {
+#if defined(SYNC_TEST)
+		local_input = rand(); // test: use random inputs to demonstrate sync testing
+		#endif
 		result = GGPONet::ggpo_add_local_input(ggpo, ngs.local_player_handle, &local_input, sizeof(local_input));
 	}
 
@@ -193,7 +195,7 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 
 void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::ggpoGame_AdvanceFrame"));
+	//UE_LOG(LogTemp, Log, TEXT("%d Advance Frame, Frame# %d++."), LocalPlayerIndex, gs.FrameNumber);
 
 	gs.Update(inputs, disconnect_flags);
 	
@@ -400,6 +402,8 @@ bool AGGPOGameStateBase::ggpoGame_begin_game_callback(const char*)
 }
 bool AGGPOGameStateBase::ggpoGame_save_game_state_callback(unsigned char** buffer, int32* len, int32* checksum, int32)
 {
+	UE_LOG(LogTemp, Warning, TEXT("%d Saving State, Frame# %d."), LocalPlayerIndex, gs.FrameNumber);
+	gs.SaveBtBodyData();
     *len = sizeof(gs);
     *buffer = (unsigned char*)malloc(*len);
     if (!*buffer) {
@@ -412,6 +416,9 @@ bool AGGPOGameStateBase::ggpoGame_save_game_state_callback(unsigned char** buffe
 bool AGGPOGameStateBase::ggpoGame_load_game_state_callback(unsigned char* buffer, int32 len)
 {
     memcpy(&gs, buffer, len);
+	gs.LoadBtBodyData();
+	UE_LOG(LogTemp, Warning, TEXT("%d Looking to Load State #%d"), LocalPlayerIndex, gs.FrameNumber);
+
     return true;
 }
 bool AGGPOGameStateBase::ggpoGame_log_game_state(char* filename, unsigned char* buffer, int32)
@@ -451,7 +458,7 @@ void AGGPOGameStateBase::ggpoGame_free_buffer(void* buffer)
 }
 bool AGGPOGameStateBase::ggpoGame_advance_frame_callback(int32)
 {
-    int inputs[4] = { 0 };
+    int inputs[4] = { 0, 0, 0, 0 };
     int disconnect_flags;
 
     // Make sure we fetch new inputs from GGPO and use those to update

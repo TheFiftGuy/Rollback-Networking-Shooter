@@ -63,12 +63,15 @@ public:
 
 	void Init(int NumPlayers_);
 	void GetPlayerAI(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
-	void ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
-	void ApplyInputToPlayer(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
+	void ParsePlayerInputs(int Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
+	void ApplyInputToPlayer(int PlayerIndex, FVector outPlayerMovement, FVector2D outMouseDelta, bool outFire);
 	void Update(int inputs[], int disconnect_flags);
 
 	void OnDestroy();
-
+	//pre-simulate load data
+	int LoadBtBodyData();
+	//pre-simulate save data
+	int SaveBtBodyData();
 
 	int FrameNumber = 0;
 	int NumPlayers = 1;
@@ -77,12 +80,6 @@ public:
 	TArray<btRigidBodyFloatData> BtBodyData;
 private:
 	void InitBullet();
-	
-	//pre-simulate load data
-	int LoadBtBodyData();
-	//post-simulate save data
-	int SaveBtBodyData();
-
 	void DeSerializeBtBodyData(btRigidBody* OutBody, const btRigidBodyFloatData& InData);
 };
 

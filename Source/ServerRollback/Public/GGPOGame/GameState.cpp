@@ -13,9 +13,9 @@ void GameState::Init(int NumPlayers_)
 
 void GameState::GetPlayerAI(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Get Player %d AI."), PlayerIndex));
+	UE_LOG(LogTemp, Log, TEXT("Player %d AI input"), PlayerIndex);
 
-	*outPlayerMovement = BulletHelpers::ToUEDir(Bullet.BtPlayerBodies[PlayerIndex]->getLinearVelocity()/10, false);
+	*outPlayerMovement = FVector(0,0,0);
 	*outMouseDelta = FVector2D(0);
 	*outFire = false;
 }
@@ -27,30 +27,30 @@ void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPla
 	bool Left = Inputs & INPUT_LEFT;
 	bool Right = Inputs & INPUT_RIGHT;
 	//F or B
-	if(Forwards && Backwards)
-	{
-		outPlayerMovement->X = 0;
-	}
-	else if(Forwards)
+	if(Forwards && !Backwards)
 	{
 		outPlayerMovement->X = 1;
 	}
-	else if(Backwards)
+	else if(Backwards && !Forwards)
 	{
 		outPlayerMovement->X = -1;
 	}
-	//L or R
-	if(Left && Right)
+	else
 	{
-		outPlayerMovement->Y = 0;
+		outPlayerMovement->X = 0;
 	}
-	else if(Right)
+	//L or R
+	if(Right && !Left)
 	{
 		outPlayerMovement->Y = 1;
 	}
-	else if(Left)
+	else if(Left && !Right)
 	{
 		outPlayerMovement->Y = -1;
+	}
+	else
+	{
+		outPlayerMovement->Y = 0;
 	}
 	outPlayerMovement->Z = ((Inputs & INPUT_JUMP) ? 1 : 0);
 	
@@ -65,26 +65,21 @@ void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPla
 
 	
 	*outFire = Inputs & INPUT_FIRE;
+
+	UE_LOG(LogTemp, Log, TEXT("Player %d movement input: %s "), PlayerIndex, *outPlayerMovement->ToString());
+
 }
 
-void GameState::ApplyInputToPlayer(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
+void GameState::ApplyInputToPlayer(int PlayerIndex, FVector outPlayerMovement, FVector2D outMouseDelta, bool outFire)
 {
-	Bullet.BtPlayerBodies[PlayerIndex]->setLinearVelocity(BulletHelpers::ToBtDir(*outPlayerMovement * 10.f, false));
+	UE_LOG(LogTemp, Log, TEXT("Player %d movement input: %s "), PlayerIndex, *outPlayerMovement.ToString());
+
+	Bullet.BtPlayerBodies[PlayerIndex]->setLinearVelocity(BulletHelpers::ToBtDir(outPlayerMovement, false));
 	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Pawn# %d velocity: %s"), Bullet.BtPlayerBodies.Num(), *outPlayerMovement->ToString()));
 }
 
 void GameState::Update(int inputs[], int disconnect_flags)
-{
-	//If there are bodies missing from the BodyData, go get em. (Generally only happens on first tick).
-	if(BtBodyData.Num() < (Bullet.BtRigidBodies.Num() + Bullet.BtPlayerBodies.Num()))
-	{
-		SaveBtBodyData();
-	}
-	else
-	{
-		LoadBtBodyData();
-	}
-	
+{	
 	FrameNumber++;
 	//refresh Bullet sim with body data
 	
@@ -99,14 +94,11 @@ void GameState::Update(int inputs[], int disconnect_flags)
 			ParsePlayerInputs(inputs[i], i, &PlayerMovement, &MouseDelta, &Fire);
 		}
 		
-		ApplyInputToPlayer(i, &PlayerMovement, &MouseDelta, &Fire);
+		ApplyInputToPlayer(i, PlayerMovement, MouseDelta, Fire);
 	}
 	
 	
 	Bullet.BtWorld->stepSimulation(btScalar(1.) / btScalar(60.), 0);
-
-	//save Bullet body data
-	SaveBtBodyData();
 }
 
 void GameState::OnDestroy()
