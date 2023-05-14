@@ -34,7 +34,10 @@ public:
 	//virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	const UCapsuleComponent* GetCapsuleComponent() const { return CapsuleComponent; }
-
+	
+	UPROPERTY(Category=Character, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
+	TObjectPtr<UCameraComponent> Camera;
+	
 	UPROPERTY(Category=Character, EditDefaultsOnly)
 	int MaxWalkSpeed = 10;
 	
@@ -53,8 +56,7 @@ private:
 	UPROPERTY(Category=Character, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
 	TObjectPtr<USkeletalMeshComponent> GunMesh;
 	
-	UPROPERTY(Category=Character, VisibleAnywhere, BlueprintReadOnly, meta=(AllowPrivateAccess = "true"))
-	TObjectPtr<UCameraComponent> Camera;
+
 
 public:
 	/*//Input

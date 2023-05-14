@@ -52,10 +52,11 @@ int32 ABulletPlayerController::GetBulletInput()
 	//get mouse
 	FVector2D MouseDelta = FVector2D();
 	GetInputMouseDelta(MouseDelta.X, MouseDelta.Y);
+	//UE_LOG(LogTemp, Log, TEXT("UE X= %f UE Y= %f"), MouseDelta.X, MouseDelta.Y);
 
 	//turns decimal float range [-1.0f , 1.0f] to int [-4096, 4096]
-	int32 MouseDeltaX = static_cast<int32>(MouseDelta.X * 4096.0f); //used to be * 8192.0f
-	int32 MouseDeltaY = static_cast<int32>(MouseDelta.Y * 4096.0f);
+	int32 MouseDeltaX = static_cast<int32>(MouseDelta.X/100 * 4096.0f); //used to be * 8192.0f
+	int32 MouseDeltaY = static_cast<int32>(MouseDelta.Y/100 * 4096.0f);
 
 	// Store the mouse deltas in the bitmask starting at bit 6
 	InputMask |= ((MouseDeltaX & 0x1FFF) << 6);

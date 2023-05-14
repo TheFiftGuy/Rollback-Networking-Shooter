@@ -32,7 +32,7 @@ APlayerPawn::APlayerPawn()
 	Camera = CreateDefaultSubobject<UCameraComponent>(TEXT("FPCamera"));
 	Camera->SetupAttachment(CapsuleComponent);
 	Camera->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
-	Camera->bUsePawnControlRotation = true;
+	//Camera->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
 	FPSMesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPMesh"));

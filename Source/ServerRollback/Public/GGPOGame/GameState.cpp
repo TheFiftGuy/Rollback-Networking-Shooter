@@ -4,6 +4,8 @@
 #include "BulletCustomMotionState.h"
 #include "BulletDebugDraw.h"
 #include "GGPOGame.h"
+#include "PlayerPawn.h"
+#include "Camera/CameraComponent.h"
 
 void GameState::Init(int NumPlayers_)
 {
@@ -53,29 +55,28 @@ void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPla
 		outPlayerMovement->Y = 0;
 	}
 	outPlayerMovement->Z = ((Inputs & INPUT_JUMP) ? 1 : 0);
-	
-	/*int32 MouseDeltaX = ((Inputs >> 8) & 0x1FFF) | (((Inputs >> 20) & 0x1) ? 0xFFFFE000 : 0);
-	int32 MouseDeltaY = ((Inputs >> 21) & 0x1FFF) | (((Inputs >> 33) & 0x1) ? 0xFFFFE000 : 0);
-	*outMouseDelta = FVector2D(MouseDeltaX / 8192.0f, MouseDeltaY / 8192.0f);*/
+
 	int32 MouseDeltaX = ((Inputs >> 6) & 0x1FFF);
 	int32 MouseDeltaY = ((Inputs >> 19) & 0x1FFF);
 	MouseDeltaX |= ((MouseDeltaX & 0x1000) ? 0xFFFFE000 : 0);
 	MouseDeltaY |= ((MouseDeltaY & 0x1000) ? 0xFFFFE000 : 0);
-	*outMouseDelta = FVector2D(MouseDeltaX / 4096.0f, MouseDeltaY / 4096.0f);
-
+	
+	float sens = 0.5;
+	*outMouseDelta = FVector2D((MouseDeltaX/4096.0f)*100 *sens, (MouseDeltaY / 4096.0f)*100 *sens);
+	//UE_LOG(LogTemp, Log, TEXT("Player %d Mouse input: %s "), PlayerIndex, *outMouseDelta->ToString());
 	
 	*outFire = Inputs & INPUT_FIRE;
 
-	UE_LOG(LogTemp, Log, TEXT("Player %d movement input: %s "), PlayerIndex, *outPlayerMovement->ToString());
-
 }
 
-void GameState::ApplyInputToPlayer(int PlayerIndex, FVector outPlayerMovement, FVector2D outMouseDelta, bool outFire)
+void GameState::ApplyInputToPlayer(int PlayerIndex, FVector inPlayerMovement, FVector2D inMouseDelta, bool inFire)
 {
-	UE_LOG(LogTemp, Log, TEXT("Player %d movement input: %s "), PlayerIndex, *outPlayerMovement.ToString());
-
-	Bullet.BtPlayerBodies[PlayerIndex]->setLinearVelocity(BulletHelpers::ToBtDir(outPlayerMovement, false));
-	//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Pawn# %d velocity: %s"), Bullet.BtPlayerBodies.Num(), *outPlayerMovement->ToString()));
+	PlayerTurn(PlayerIndex, inMouseDelta);
+	PlayerMove(PlayerIndex, inPlayerMovement);
+	if(inFire)
+	{
+		PlayerFire(PlayerIndex);
+	}
 }
 
 void GameState::Update(int inputs[], int disconnect_flags)
@@ -178,6 +179,66 @@ void GameState::InitBullet()
 	Bullet.BtWorld->setGravity(BulletHelpers::ToBtDir(FVector(0, 0, -980)));
 
 	
+}
+
+void GameState::PlayerMove(int PlayerIndex, FVector PlayerMovement)
+{
+	btVector3 PlayerVel = Bullet.BtPlayerBodies[PlayerIndex]->getLinearVelocity();
+	btVector3 BtMovement = (BulletHelpers::ToBtDir(PlayerMovement));
+	//movement * forwardsVec * 600 (speed)
+	BtMovement = (Bullet.BtPlayerBodies[PlayerIndex]->getWorldTransform().getBasis() * BtMovement) *600;
+
+	
+	if(BtMovement.getZ() > KINDA_SMALL_NUMBER)
+	{
+		//is grounded
+		btVector3 From = Bullet.BtPlayerBodies[PlayerIndex]->getWorldTransform().getOrigin();
+		btVector3 Offset = btVector3(0.f, 0.f, - (0.96 + 0.25));
+		btVector3 To = From + Offset;
+		btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
+		Bullet.BtWorld->rayTest(From, To, rayCallback);
+		//if standing on something and not falling
+		if(rayCallback.hasHit())
+		{
+			//UE_LOG(LogTemp, Warning, TEXT("Jump raycast hit: %hs"), rayCallback.m_collisionObject->getCollisionShape()->getName());
+			BtMovement.setZ(7.5);
+		}
+		else	{
+			BtMovement.setZ(0);
+		}
+	}
+	
+	PlayerVel.setX(BtMovement.getX());
+	PlayerVel.setY(BtMovement.getY());
+	//if not jumping or falling, apply BtMovement.Z, else do not change vel.z
+	if(BtMovement.getZ() > 1)
+		PlayerVel.setZ(BtMovement.getZ());
+	
+	//clamp values
+	Bullet.BtPlayerBodies[PlayerIndex]->setLinearVelocity(PlayerVel);
+}
+
+void GameState::PlayerTurn(int PlayerIndex, FVector2D MouseDelta)
+{
+	if(APlayerPawn* Pawn = (APlayerPawn*)Bullet.BtPlayerBodies[PlayerIndex]->getUserPointer())
+	{
+		//turn camera vert/horiz
+		FRotator yaw = FRotator(0,MouseDelta.X, 0);
+		Pawn->AddActorLocalRotation(yaw);
+		FRotator pitch = FRotator(MouseDelta.Y, 0, 0);
+		Pawn->Camera.Get()->AddRelativeRotation(pitch);
+
+		//Pawn->SetActorRotation(rot);
+		/*Pawn->AddControllerYawInput(MouseDelta.X);
+		Pawn->AddControllerPitchInput(MouseDelta.Y);*/
+		//turn BtBody around the UE5 Z axis
+		btQuaternion BodyRot = BulletHelpers::ToBt(FRotator(0, Pawn->GetActorRotation().Yaw, 0));
+		Bullet.BtPlayerBodies[PlayerIndex]->getWorldTransform().setRotation(BodyRot);//unsure if this way or motionState() way is deterministic.
+	}
+}
+
+void GameState::PlayerFire(int PlayerIndex)
+{
 }
 
 int GameState::LoadBtBodyData()

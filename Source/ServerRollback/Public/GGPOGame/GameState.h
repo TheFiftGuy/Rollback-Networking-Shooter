@@ -8,7 +8,6 @@
 
 #include <windef.h>
 
-
 class APlayerPawn;
 class btDiscreteDynamicsWorld;
 
@@ -64,7 +63,7 @@ public:
 	void Init(int NumPlayers_);
 	void GetPlayerAI(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
 	void ParsePlayerInputs(int Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
-	void ApplyInputToPlayer(int PlayerIndex, FVector outPlayerMovement, FVector2D outMouseDelta, bool outFire);
+	void ApplyInputToPlayer(int PlayerIndex, FVector inPlayerMovement, FVector2D inMouseDelta, bool inFire);
 	void Update(int inputs[], int disconnect_flags);
 
 	void OnDestroy();
@@ -80,6 +79,9 @@ public:
 	TArray<btRigidBodyFloatData> BtBodyData;
 private:
 	void InitBullet();
+	void PlayerMove(int PlayerIndex,FVector PlayerMovement);
+	void PlayerTurn(int PlayerIndex, FVector2D MouseDelta);
+	void PlayerFire(int PlayerIndex);
 	void DeSerializeBtBodyData(btRigidBody* OutBody, const btRigidBodyFloatData& InData);
 };
 
