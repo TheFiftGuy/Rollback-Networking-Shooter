@@ -6,6 +6,7 @@
 #include "BulletPlayerController.h"
 #include "PhysicsWorldActor.h"
 #include "Kismet/GameplayStatics.h"
+#include "ServerRollback/ServerRollback.h"
 
 #define FRAME_RATE 60
 #define ONE_FRAME (1.0f / FRAME_RATE)
@@ -177,7 +178,7 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 	if (ngs.local_player_handle != GGPO_INVALID_HANDLE) {
 #if defined(SYNC_TEST)
 		local_input = rand(); // test: use random inputs to demonstrate sync testing
-		#endif
+#endif
 		result = GGPONet::ggpo_add_local_input(ggpo, ngs.local_player_handle, &local_input, sizeof(local_input));
 	}
 
@@ -195,7 +196,7 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 
 void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags)
 {
-	//UE_LOG(LogTemp, Log, TEXT("%d Advance Frame, Frame# %d++."), LocalPlayerIndex, gs.FrameNumber);
+	UE_LOG(GGPOlog, Log, TEXT("%d Advance Frame, Frame# %d++."), LocalPlayerIndex, gs.FrameNumber);
 
 	gs.Update(inputs, disconnect_flags);
 	
@@ -402,7 +403,7 @@ bool AGGPOGameStateBase::ggpoGame_begin_game_callback(const char*)
 }
 bool AGGPOGameStateBase::ggpoGame_save_game_state_callback(unsigned char** buffer, int32* len, int32* checksum, int32)
 {
-	UE_LOG(LogTemp, Warning, TEXT("%d Saving State, Frame# %d."), LocalPlayerIndex, gs.FrameNumber);
+	//UE_LOG(LogTemp, Warning, TEXT("%d Saving State, Frame# %d."), LocalPlayerIndex, gs.FrameNumber);
 	gs.SaveBtBodyData();
     *len = sizeof(gs);
     *buffer = (unsigned char*)malloc(*len);
@@ -417,39 +418,13 @@ bool AGGPOGameStateBase::ggpoGame_load_game_state_callback(unsigned char* buffer
 {
     memcpy(&gs, buffer, len);
 	gs.LoadBtBodyData();
-	UE_LOG(LogTemp, Warning, TEXT("%d Looking to Load State #%d"), LocalPlayerIndex, gs.FrameNumber);
+	//UE_LOG(LogTemp, Warning, TEXT("%d Looking to Load State #%d"), LocalPlayerIndex, gs.FrameNumber);
 
     return true;
 }
 bool AGGPOGameStateBase::ggpoGame_log_game_state(char* filename, unsigned char* buffer, int32)
 {
-    /*FILE* fp = nullptr;
-    fopen_s(&fp, filename, "w");
-    if (fp) {
-        GameState* gamestate = (GameState*)buffer;
-        fprintf(fp, "GameState object.\n");
-        fprintf(fp, "  bounds: %ld,%ld x %ld,%ld.\n", gamestate->_bounds.left, gamestate->_bounds.top,
-            gamestate->_bounds.right, gamestate->_bounds.bottom);
-        fprintf(fp, "  num_ships: %d.\n", gamestate->_num_ships);
-        for (int i = 0; i < gamestate->_num_ships; i++) {
-            Ship* ship = gamestate->_ships + i;
-            fprintf(fp, "  ship %d position:  %.4f, %.4f\n", i, ship->position.x, ship->position.y);
-            fprintf(fp, "  ship %d velocity:  %.4f, %.4f\n", i, ship->velocity.dx, ship->velocity.dy);
-            fprintf(fp, "  ship %d radius:    %d.\n", i, ship->radius);
-            fprintf(fp, "  ship %d heading:   %d.\n", i, ship->heading);
-            fprintf(fp, "  ship %d health:    %d.\n", i, ship->health);
-            fprintf(fp, "  ship %d speed:     %d.\n", i, ship->speed);
-            fprintf(fp, "  ship %d cooldown:  %d.\n", i, ship->cooldown);
-            fprintf(fp, "  ship %d score:     %d.\n", i, ship->score);
-            for (int j = 0; j < MAX_BULLETS; j++) {
-                Bullet* bullet = ship->bullets + j;
-                fprintf(fp, "  ship %d bullet %d: %.2f %.2f -> %.2f %.2f.\n", i, j,
-                    bullet->position.x, bullet->position.y,
-                    bullet->velocity.dx, bullet->velocity.dy);
-            }
-        }
-        fclose(fp);
-    }*/
+   //Sadly doesnt seem to work in the UE4 GGPO plugin, no matter how I do it.
     return true;
 }
 void AGGPOGameStateBase::ggpoGame_free_buffer(void* buffer)

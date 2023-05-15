@@ -77,6 +77,9 @@ public:
 	BulletPhysics Bullet;
 	//Contains PlayerBodiesData, then rest of bodiesData
 	TArray<btRigidBodyFloatData> BtBodyData;
+	int FireCooldown[4] = {0};
+	int PlayerHitsReceived[4] = {0};
+	int PlayerHitsDealt[4] = {0};
 private:
 	void InitBullet();
 	void PlayerMove(int PlayerIndex,FVector PlayerMovement);

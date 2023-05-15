@@ -4,3 +4,6 @@
 #include "Modules/ModuleManager.h"
 
 IMPLEMENT_PRIMARY_GAME_MODULE( FDefaultGameModuleImpl, ServerRollback, "ServerRollback" );
+
+//General Log
+DEFINE_LOG_CATEGORY(GGPOlog);

@@ -4,3 +4,5 @@
 
 #include "CoreMinimal.h"
 
+//General Log
+DECLARE_LOG_CATEGORY_EXTERN(GGPOlog, Log, All);

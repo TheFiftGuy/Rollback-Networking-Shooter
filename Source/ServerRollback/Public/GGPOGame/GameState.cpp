@@ -73,9 +73,14 @@ void GameState::ApplyInputToPlayer(int PlayerIndex, FVector inPlayerMovement, FV
 {
 	PlayerTurn(PlayerIndex, inMouseDelta);
 	PlayerMove(PlayerIndex, inPlayerMovement);
-	if(inFire)
+	if(inFire && FireCooldown[PlayerIndex] <= 0)
 	{
 		PlayerFire(PlayerIndex);
+		//reset cooldown by __ frames (60fps)
+		FireCooldown[PlayerIndex] = 30;
+	}
+	else if(FireCooldown[PlayerIndex] > 0)	{
+		FireCooldown[PlayerIndex]--;
 	}
 }
 
@@ -239,6 +244,48 @@ void GameState::PlayerTurn(int PlayerIndex, FVector2D MouseDelta)
 
 void GameState::PlayerFire(int PlayerIndex)
 {
+	if(APlayerPawn* Shooter = (APlayerPawn*)Bullet.BtPlayerBodies[PlayerIndex]->getUserPointer())
+	{
+		btVector3 From = Bullet.BtPlayerBodies[PlayerIndex]->getWorldTransform().getOrigin();
+		
+		btVector3 Offset = BulletHelpers::ToBtPos(Shooter->Camera->GetRelativeLocation(), FVector(0));
+		From += Offset;
+		
+		btVector3 CamDir = BulletHelpers::ToBtDir(Shooter->Camera->GetForwardVector()) * 10000.f; //prob bigger than necessary 
+		btVector3 To = From + CamDir;
+		
+		btCollisionWorld::ClosestRayResultCallback rayCallback(From, To);
+		Bullet.BtWorld->rayTest(From, To, rayCallback);
+
+		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Fired"));
+		DrawDebugLine(Shooter->GetWorld(), BulletHelpers::ToUEPos(From, FVector(0)), BulletHelpers::ToUEPos(To,FVector(0)),FColor::Green, false, 1.f, 0, 1);
+		
+		if(rayCallback.hasHit())
+		{
+			//Has to be cast this way. Unreal doesn't like turning dumb void* into Unreal UObject*.
+			if(APlayerPawn* HitPlayer = (APlayerPawn*)rayCallback.m_collisionObject->getUserPointer())
+			{
+				if (HitPlayer->IsA(APlayerPawn::StaticClass()))
+				{
+					//we hit someone
+					PlayerHitsDealt[PlayerIndex]++;
+					for(int i = 0; i < NumPlayers; i++)
+					{
+						//we cant shoot ourself
+						if(i == PlayerIndex)
+							continue;
+						//if we hit player i
+						if(HitPlayer == Bullet.BtPlayerBodies[i]->getUserPointer())	{
+							//they got hit one more time
+							PlayerHitsReceived[i]++;
+							UE_LOG(LogTemp, Log, TEXT("Player %d Shot %d."), PlayerIndex, i);
+							break;
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 int GameState::LoadBtBodyData()

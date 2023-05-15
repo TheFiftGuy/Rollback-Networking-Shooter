@@ -4,6 +4,7 @@
 #include "GameState.h"
 #include "NonGameState.h"
 
+//#define SYNC_TEST = true;
 /*
  * GGPOGame.h --
  *
