@@ -94,6 +94,8 @@ private:
 	 */
 	void Game_Init(uint16 localport, int32 num_players, GGPOPlayer* players, int32 num_spectators);
 
+	void UELogGameState(const int32 inputs[]);
+
 private:
 	//D GGPO CALLBACKS SECTION ------------------------------------
 	/** Gets a GGPOSessionCallbacks object with its callback functions assigned. */

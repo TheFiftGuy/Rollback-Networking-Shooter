@@ -192,7 +192,7 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 
 void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags)
 {
-	UE_LOG(GGPOlog, Log, TEXT("%d Advance Frame, Frame# %d++."), LocalPlayerIndex, gs.FrameNumber);
+	//UE_LOG(GGPOlog, Log, TEXT("%d Advance Frame, Frame# %d++."), LocalPlayerIndex, gs.FrameNumber);
 
 	gs.Update(inputs, disconnect_flags);
 	
@@ -207,14 +207,16 @@ void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_
 	// Notify ggpo that we've moved forward exactly 1 frame.
 	GGPONet::ggpo_advance_frame(ggpo);
 
-	// Update the performance monitor display.
+	/*// Update the performance monitor display.
 	GGPOPlayerHandle handles[MAX_PLAYERS];
 	int count = 0;
 	for (int i = 0; i < ngs.num_players; i++) {
 		if (ngs.players[i].type == EGGPOPlayerType::REMOTE) {
 			handles[count++] = ngs.players[i].handle;
 		}
-	}
+	}*/
+	//log post-tick gamestate into UE log
+	UELogGameState(inputs);
 }
 
 void AGGPOGameStateBase::ggpoGame_Idle(int32 time)
@@ -375,6 +377,32 @@ void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlay
 	}
 
 	GGPONet::ggpo_try_synchronize_local(ggpo);
+}
+
+void AGGPOGameStateBase::UELogGameState(const int32 inputs[])
+{
+	UE_LOG(GGPOlog, Log, TEXT("---------------LOG START ----------------------"));
+	UE_LOG(GGPOlog, Log, TEXT("Frame# %d\t Players: %d.\t PLAYER LOGS BELOW."), gs.FrameNumber, gs.NumPlayers);
+	for(int i = 0; i < gs.NumPlayers; i++)	{
+		UE_LOG(GGPOlog, Log, TEXT("Player START-------------------------"));
+		UE_LOG(GGPOlog, Log, TEXT("PLAYER %d INFO\tHP: %d\t Hits:%d\t INPUT: %d"), i+1, GetPlayerHP(i), GetPlayerHits(i), inputs[i]);
+		btRigidBody* player = gs.Bullet.BtPlayerBodies[i];
+		FString s1 = FString::SanitizeFloat(player->getWorldTransform().getOrigin().getX(), 5);
+		FString s2 = FString::SanitizeFloat(player->getWorldTransform().getOrigin().getY(), 5);
+		FString s3 = FString::SanitizeFloat(player->getWorldTransform().getOrigin().getZ(), 5);
+		UE_LOG(GGPOlog, Log, TEXT("POS: %s\t%s\t%s"),  *s1, *s2, *s3);
+		btScalar fl[3];
+		player->getWorldTransform().getRotation().getEulerZYX(fl[0], fl[1], fl[2]);
+		s1 = FString::SanitizeFloat(fl[0]);
+		s2 = FString::SanitizeFloat(fl[1]);
+		s3 = FString::SanitizeFloat(fl[2]);
+		UE_LOG(GGPOlog, Log, TEXT("ROT: %s\t%s\t%s"),  *s1, *s2, *s3);
+		s1 = FString::SanitizeFloat(player->getLinearVelocity().getX(), 5);
+		s2 = FString::SanitizeFloat(player->getLinearVelocity().getY(), 5);
+		s3 = FString::SanitizeFloat(player->getLinearVelocity().getZ(), 5);
+		UE_LOG(GGPOlog, Log, TEXT("VEL: %s\t%s\t%s"),  *s1, *s2, *s3);		
+	}
+
 }
 
 GGPOSessionCallbacks AGGPOGameStateBase::CreateCallbacks()
