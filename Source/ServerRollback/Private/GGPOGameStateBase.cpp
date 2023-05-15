@@ -92,21 +92,17 @@ void AGGPOGameStateBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AGGPOGameStateBase::OnSessionStarted_Implementation()
 {
-	/*FActorSpawnParameters SpawnInfo;
-	FVector SpawnLoc = FVector(0,0,100);
-	FRotator SpawnRot = FRotator();
-	for (int i = 0; i < gs.NumPlayers; i++)
-	{
-		SpawnLoc.X = 100*i; //offset pos
-		PlayerPawns.Add(GetWorld()->SpawnActor<APlayerPawn>(PawnClass, SpawnLoc, SpawnRot, SpawnInfo));
-	}*/
 	//connects the player to the pawn (camera)
 	if(PlayerPawns.Num() > 0)	{
 		//UGameplayStatics::GetPlayerController(GetWorld(), 0)->UnPossess();
 		UGameplayStatics::GetPlayerController(GetWorld(), 0)->Possess(PlayerPawns[LocalPlayerIndex]);
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Possed Pawn#: %d"), LocalPlayerIndex));
 	}
-		
+	SetupHUD();
+}
+
+void AGGPOGameStateBase::SetupHUD_Implementation()
+{
 }
 
 void AGGPOGameStateBase::TickGameState()

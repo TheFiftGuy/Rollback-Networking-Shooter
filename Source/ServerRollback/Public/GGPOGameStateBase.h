@@ -18,7 +18,6 @@ class SERVERROLLBACK_API AGGPOGameStateBase : public AGameStateBase
 private:
 	GGPOSession* ggpo = nullptr;
 	
-	//GameState gs = { 0 };
 	NonGameState ngs = { 0 };
 	
 	bool bSessionStarted;
@@ -29,7 +28,7 @@ public:
 
 	UPROPERTY(Category="Player",EditAnywhere,BlueprintReadWrite)
 	TSubclassOf<APlayerPawn> PawnClass;
-
+	
 	UPROPERTY()
 	TArray<APlayerPawn*> PlayerPawns;
 	int LocalPlayerIndex = 0;
@@ -47,7 +46,19 @@ public:
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="GGPO")
 	void OnSessionStarted();
 	virtual void OnSessionStarted_Implementation();
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category="GGPO")
+	void SetupHUD();
+	virtual void SetupHUD_Implementation();
+
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	int GetPlayerNum() const { return gs.NumPlayers; }
 	
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	int GetPlayerHP(int Index) const { return (100 - gs.PlayerHitsReceived[Index]); }
+	UFUNCTION(BlueprintCallable, BlueprintPure)
+	int GetPlayerHits(int Index) const { return gs.PlayerHitsDealt[Index]; }
+
 	//NonGameState GetNonGameState() const { return ngs; }
 private:
 	void TickGameState();
