@@ -360,7 +360,7 @@ bool AGGPOGameStateBase::ggpoGame_begin_game_callback(const char*)
 }
 bool AGGPOGameStateBase::ggpoGame_save_game_state_callback(unsigned char** buffer, int32* len, int32* checksum, int32)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("%d Saving State, Frame# %d."), LocalPlayerIndex, gs.FrameNumber);
+	UE_LOG(GGPOlog, Log, TEXT("%d Saving State, Frame# %d."), LocalPlayerIndex, gs.FrameNumber);
 	gs.SaveBtBodyData();
     *len = sizeof(gs);
     *buffer = (unsigned char*)malloc(*len);
@@ -375,7 +375,7 @@ bool AGGPOGameStateBase::ggpoGame_load_game_state_callback(unsigned char* buffer
 {
     memcpy(&gs, buffer, len);
 	gs.LoadBtBodyData();
-	//UE_LOG(LogTemp, Warning, TEXT("%d Looking to Load State #%d"), LocalPlayerIndex, gs.FrameNumber);
+	UE_LOG(GGPOlog, Warning, TEXT("%d Loaded State #%d"), LocalPlayerIndex, gs.FrameNumber);
 
     return true;
 }
