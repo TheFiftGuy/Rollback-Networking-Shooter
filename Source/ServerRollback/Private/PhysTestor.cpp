@@ -20,7 +20,6 @@ APhysTestor::APhysTestor()
 	
 	TestComponent = CreateDefaultSubobject <UTestStaticMeshComponent>(TEXT("TestStaticMeshComponent"));
 	TestComponent->SetStaticMesh(SphereMesh.Object);
-	TestComponent->SetMassOverrideInKg(NAME_None, 100.0f, true);
 	//const FAttachmentTransformRules Attachment = FAttachmentTransformRules( EAttachmentRule::KeepRelative, true );
 
 	

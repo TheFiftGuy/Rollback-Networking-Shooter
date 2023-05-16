@@ -315,7 +315,7 @@ void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlay
 void AGGPOGameStateBase::UELogGameState(const int32 inputs[])
 {
 	UE_LOG(GGPOlog, Log, TEXT("---------------LOG START ----------------------"));
-	UE_LOG(GGPOlog, Log, TEXT("Frame# %d\t Players: %d.\t PLAYER LOGS BELOW."), gs.FrameNumber, gs.NumPlayers);
+	UE_LOG(GGPOlog, Log, TEXT("Frame# %d\t Players: %d.\t LOCALPLAYER: %d\tPLAYER LOGS BELOW."), gs.FrameNumber, gs.NumPlayers, LocalPlayerIndex);
 	for(int i = 0; i < gs.NumPlayers; i++)	{
 		UE_LOG(GGPOlog, Log, TEXT("Player START-------------------------"));
 		UE_LOG(GGPOlog, Log, TEXT("PLAYER %d INFO\tHP: %d\t Hits:%d\t INPUT: %d"), i+1, GetPlayerHP(i), GetPlayerHits(i), inputs[i]);
