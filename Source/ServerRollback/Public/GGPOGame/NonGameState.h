@@ -5,6 +5,9 @@
 
 #define MAX_PLAYERS     64
 
+//entirely sourced from https://github.com/BwdYeti/VectorWarUE4
+//largely unsused but kept to keep GGPO working
+
 /*
  * nongamestate.h --
  *

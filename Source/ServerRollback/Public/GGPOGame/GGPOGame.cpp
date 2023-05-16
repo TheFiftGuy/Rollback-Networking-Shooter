@@ -14,8 +14,7 @@
 
 
 /* 
- * Simple checksum function stolen from wikipedia:
- *
+ * Simple checksum function from wikipedia:
  *   http://en.wikipedia.org/wiki/Fletcher%27s_checksum
  */
 int

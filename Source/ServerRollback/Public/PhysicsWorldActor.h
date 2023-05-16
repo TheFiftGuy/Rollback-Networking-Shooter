@@ -3,16 +3,16 @@
 #pragma once
 
 #include "CoreMinimal.h"
-
 #include "GGPOGame/GGPOGame.h"
-
 #include "GameFramework/Actor.h"
 #include "PhysicsWorldActor.generated.h"
 
 class BulletDebugDraw;
 class APlayerPawn;
 
-//Class is sourced from (link), I have extended the functionality. https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
+//The Setup and general structure of Bullet in Unreal is done according to this source :
+//https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
+//Alot of the data storage/pointers have been moved to the (external) GameState.h, but functions still remain here since they use UE.
 UCLASS()
 class SERVERROLLBACK_API APhysicsWorldActor : public AActor
 {
@@ -31,13 +31,12 @@ protected:
 public:
 
 	void InitPhysWorld();
-	// Called every frame
+
 	virtual void Tick(float DeltaTime) override;
 
 	void UpdatePlayerPhysics(APlayerPawn* Pawn);
 
 	//D Static Actor Properties section
-	
 	// This list can be edited in the level, linking to placed static actors
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Bullet Physics|Objects")
 	TArray<AActor*> PhysicsStaticActors1;
@@ -60,61 +59,7 @@ public:
 	UPROPERTY()
 	class AGGPOGameStateBase* GGPOGameStateBase;
 private:
-
 	
-	//D Bullet default for maxSubsteps is 3, using 0 enables manual sub stepping
-	int BtMaxSubSteps = 0;
-	// 1 / desiredFPS (default 60)
-	double BtPhysicsTimeStep = 1./60.0; 
-	btScalar TimeStepAccumulator = 0;
-	
-	void StepPhysics(float DeltaSeconds);
-	//D Data storage section
-	//...
-
-	//B
-	/*
-	// Bullet section
-	// Global objects
-	btCollisionConfiguration* BtCollisionConfig;
-	btCollisionDispatcher* BtCollisionDispatcher;
-	btBroadphaseInterface* BtBroadphase;
-	btConstraintSolver* BtConstraintSolver;
-	btDiscreteDynamicsWorld* BtWorld;
-
-	// Dynamic bodies
-	TArray<btRigidBody*> BtRigidBodies;
-	// Static colliders
-	TArray<btCollisionObject*> BtStaticObjects;
-	// Re-usable collision shapes
-	TArray<btBoxShape*> BtBoxCollisionShapes;
-	TArray<btSphereShape*> BtSphereCollisionShapes;
-	TArray<btCapsuleShape*> BtCapsuleCollisionShapes;
-	// Structure to hold re-usable ConvexHull shapes based on origin BodySetup / subindex / scale
-	struct ConvexHullShapeHolder
-	{
-		UBodySetup* BodySetup;
-		int HullIndex;
-		FVector Scale;
-		btConvexHullShape* Shape;
-	};
-	TArray<ConvexHullShapeHolder> BtConvexHullCollisionShapes;
-	// These shapes are for *potentially* compound rigid body shapes
-	struct CachedDynamicShapeData
-	{
-		FName ClassName; // class name for cache
-		btCollisionShape* Shape;
-		bool bIsCompound; // if true, this is a compound shape and so must be deleted
-		btScalar Mass;
-		btVector3 Inertia; // because we like to precalc this
-	};
-	TArray<CachedDynamicShapeData> CachedDynamicShapes;
-	*/
-
-	//...
-	//D data storage section end
-
-	//D Static Collision section
 	void SetupStaticGeometryPhysics(TArray<AActor*> Actors, float Friction, float Restitution);
 
 	//D I added

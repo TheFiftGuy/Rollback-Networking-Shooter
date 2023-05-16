@@ -29,7 +29,6 @@ void AGGPOGameStateBase::BeginPlay()
 		// Get the network addresses
 		NetworkAddresses = GgpoGameInstance->NetworkAddresses;
 		NumPlayers = NetworkAddresses->NumPlayers();
-		//GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("NumPlayers = %d"), NumPlayers));
 		// Reset the game instance network addresses
 		GgpoGameInstance->NetworkAddresses = nullptr;
 	}
@@ -39,16 +38,6 @@ void AGGPOGameStateBase::BeginPlay()
 	if (bSessionStarted)
 	{
 		OnSessionStarted();
-		//D TODO  Render network graph stuff(taken from VW port).
-		/*
-		NetworkGraphData.Empty();
-		TArray<FGGPONetworkStats> Network = VectorWar_GetNetworkStats();
-		int32 Count = Network.Num();
-		for (int32 i = 0; i < Count; i++)
-		{
-			NetworkGraphData.Add(FNetworkGraphPlayer{ });
-		}
-		*/
 	}
 	else
 	{
@@ -59,8 +48,7 @@ void AGGPOGameStateBase::BeginPlay()
 void AGGPOGameStateBase::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
-	//UE_LOG(LogTemp, Warning, TEXT("AGGPOGameStateBase::Tick"));
-
+	
 	MSG msg = { 0 };
 
 	ElapsedTime += DeltaSeconds;
@@ -112,44 +100,7 @@ void AGGPOGameStateBase::TickGameState()
 	int32 Input = GetLocalInputs();
 	ggpoGame_RunFrame(Input);
 
-	//D TODO: Network Data stuff can go here
-	/*TArray<FGGPONetworkStats> Network = VectorWar_GetNetworkStats();
-	for (int32 i = 0; i < NetworkGraphData.Num(); i++)
-	{
-		TArray<FNetworkGraphData>* PlayerData = &NetworkGraphData[i].PlayerData;
-
-		int32 Fairness;
-		int32 LocalFairness = Network[i].timesync.local_frames_behind;
-		int32 RemoteFairness = Network[i].timesync.remote_frames_behind;
-		int32 Ping = Network[i].network.ping;
-
-		if (LocalFairness < 0 && RemoteFairness < 0) {
-			/*
-			 * Both think it's unfair (which, ironically, is fair).  Scale both and subtrace.
-			 #1#
-			Fairness = abs(abs(LocalFairness) - abs(RemoteFairness));
-		}
-		else if (LocalFairness > 0 && RemoteFairness > 0) {
-			/*
-			 * Impossible!  Unless the network has negative transmit time.  Odd....
-			 #1#
-			Fairness = 0;
-		}
-		else {
-			/*
-			 * They disagree.  Add.
-			 #1#
-			Fairness = abs(LocalFairness) + abs(RemoteFairness);
-		}
-
-		FNetworkGraphData GraphData = FNetworkGraphData{ Fairness, RemoteFairness, Ping };
-		PlayerData->Add(GraphData);
-
-		while (PlayerData->Num() > NETWORK_GRAPH_STEPS)
-		{
-			PlayerData->RemoveAt(0);
-		}
-	}*/
+	
 }
 
 int32 AGGPOGameStateBase::GetLocalInputs()
@@ -192,7 +143,7 @@ void AGGPOGameStateBase::ggpoGame_RunFrame(int32 local_input)
 
 void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags)
 {
-	//UE_LOG(GGPOlog, Log, TEXT("%d Advance Frame, Frame# %d++."), LocalPlayerIndex, gs.FrameNumber);
+	UE_LOG(GGPOlog, Log, TEXT("%d Advance Frame, Frame# %d++."), LocalPlayerIndex, gs.FrameNumber);
 
 	gs.Update(inputs, disconnect_flags);
 	
@@ -203,20 +154,11 @@ void AGGPOGameStateBase::ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_
 	if ((gs.FrameNumber % 90) == 0) {
 		ngs.periodic = ngs.now;
 	}
-
+	
+	//log post-tick gamestate into UE log so that it can be compared to any rollbacked post-tick state
+	UELogGameState(inputs);
 	// Notify ggpo that we've moved forward exactly 1 frame.
 	GGPONet::ggpo_advance_frame(ggpo);
-
-	/*// Update the performance monitor display.
-	GGPOPlayerHandle handles[MAX_PLAYERS];
-	int count = 0;
-	for (int i = 0; i < ngs.num_players; i++) {
-		if (ngs.players[i].type == EGGPOPlayerType::REMOTE) {
-			handles[count++] = ngs.players[i].handle;
-		}
-	}*/
-	//log post-tick gamestate into UE log
-	UELogGameState(inputs);
 }
 
 void AGGPOGameStateBase::ggpoGame_Idle(int32 time)
@@ -311,15 +253,6 @@ void AGGPOGameStateBase::Game_Init(uint16 localport, int32 num_players, GGPOPlay
 	if(APhysicsWorldActor* PhysWorldActor = Cast<APhysicsWorldActor>(UGameplayStatics::GetActorOfClass(GetWorld(), APhysicsWorldActor::StaticClass())))
 	{
 		PhysWorldActor->InitPhysWorld();
-		/*if(PlayerPawns.Num() > 0)
-		{
-			for (APlayerPawn* pawn : PlayerPawns)
-			{
-				PhysWorldActor->AddPhysicsPlayer(pawn);
-			}
-			UGameplayStatics::GetPlayerController(GetWorld(), 0)->Possess(PlayerPawns[LocalPlayerIndex]);
-			GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Blue, FString::Printf(TEXT("Possed Pawn#: %d"), LocalPlayerIndex));
-		}*/
 		FActorSpawnParameters SpawnInfo;
 		FVector SpawnLoc = FVector(0,0,150);
 		FRotator SpawnRot = FRotator();

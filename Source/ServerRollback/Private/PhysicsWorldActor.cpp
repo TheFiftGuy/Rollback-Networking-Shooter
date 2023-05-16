@@ -18,48 +18,12 @@ APhysicsWorldActor::APhysicsWorldActor()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
-	//B
-	/*// This is all pretty standard Bullet bootstrap
-	BtCollisionConfig = new btDefaultCollisionConfiguration();
-	BtCollisionDispatcher = new btCollisionDispatcher (BtCollisionConfig);
-	BtBroadphase = new btDbvtBroadphase ();
-	BtConstraintSolver = new btSequentialImpulseConstraintSolver();
-	BtWorld = new btDiscreteDynamicsWorld (BtCollisionDispatcher, BtBroadphase, BtConstraintSolver, BtCollisionConfig);
-
-	// I mess with a few settings on BtWorld->getSolverInfo() but they're specific to my needs	
-
-	// Gravity vector in our units (1=1cm)
-	BtWorld->setGravity(BulletHelpers::ToBtDir(FVector(0, 0, -980)));*/
-
-
 }
 
 // Called when the game starts or when spawned
 void APhysicsWorldActor::BeginPlay()
 {
 	Super::BeginPlay();
-
-	/*GGPOGameStateBase = GetWorld()->GetGameState<AGGPOGameStateBase>();
-	
-	//D option section to enable debug draw mode
-	// set up debug rendering
-	if(GGPOGameStateBase)
-	{
-		BtDebugDraw = new BulletDebugDraw(GetWorld(), GetActorLocation());
-		GGPOGameStateBase->GetGameState().Bullet.BtWorld->setDebugDrawer(BtDebugDraw);
-		GGPOGameStateBase->GetGameState().Bullet.BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
-	}
-	
-	//B
-	/*BtDebugDraw = new BulletDebugDraw(GetWorld(), GetActorLocation());
-	BtWorld->setDebugDrawer(BtDebugDraw);
-	BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);#1#
-
-	SetupStaticGeometryPhysics(PhysicsStaticActors1, PhysicsStatic1Friction, PhysicsStatic1Restitution);
-
-	SetupInitialDynamicPhysics(PhysicsDynamicActors);*/
-
 }
 
 void APhysicsWorldActor::InitPhysWorld()
@@ -75,11 +39,6 @@ void APhysicsWorldActor::InitPhysWorld()
 		GGPOGameStateBase->gs.Bullet.BtWorld->setDebugDrawer(BtDebugDraw);
 		GGPOGameStateBase->gs.Bullet.BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);
 	}
-	
-	//B
-	/*BtDebugDraw = new BulletDebugDraw(GetWorld(), GetActorLocation());
-	BtWorld->setDebugDrawer(BtDebugDraw);
-	BtWorld->getDebugDrawer()->setDebugMode(btIDebugDraw::DBG_DrawWireframe);*/
 
 	SetupStaticGeometryPhysics(PhysicsStaticActors1, PhysicsStatic1Friction, PhysicsStatic1Restitution);
 
@@ -89,67 +48,9 @@ void APhysicsWorldActor::InitPhysWorld()
 void APhysicsWorldActor::BeginDestroy()
 {
 	Super::BeginDestroy();
-	delete BtDebugDraw;
+	if(BtDebugDraw)
+		delete BtDebugDraw;
 	BtDebugDraw = nullptr;
-
-	//B
-	/*if(BtWorld)
-	{
-		if(BtWorld->getNumCollisionObjects() - 1 >= 0)
-		{
-			for (int i = BtWorld->getNumCollisionObjects() - 1; i >= 0; i--)
-			{
-				btCollisionObject* obj = BtWorld->getCollisionObjectArray()[i];
-				btRigidBody* body = btRigidBody::upcast(obj);
-				if (body && body->getMotionState())
-				{
-					delete body->getMotionState();
-				}
-				BtWorld->removeCollisionObject(obj);
-				delete obj;
-			}
-		}
-	}
-	
-	
-	// delete collision shapes
-	for (int i = 0; i < BtBoxCollisionShapes.Num(); i++)
-		delete BtBoxCollisionShapes[i];
-	BtBoxCollisionShapes.Empty();
-	for (int i = 0; i < BtSphereCollisionShapes.Num(); i++)
-		delete BtSphereCollisionShapes[i];
-	BtSphereCollisionShapes.Empty();
-	for (int i = 0; i < BtCapsuleCollisionShapes.Num(); i++)
-		delete BtCapsuleCollisionShapes[i];
-	BtCapsuleCollisionShapes.Empty();
-	for (int i = 0; i < BtConvexHullCollisionShapes.Num(); i++)
-		delete BtConvexHullCollisionShapes[i].Shape;
-	BtConvexHullCollisionShapes.Empty();
-	for (int i = 0; i < CachedDynamicShapes.Num(); i++)
-	{
-		// Only delete if this is a compound shape, otherwise it's an alias to other simple arrays
-		if (CachedDynamicShapes[i].bIsCompound)
-			delete CachedDynamicShapes[i].Shape;
-	}
-	CachedDynamicShapes.Empty();
-
-	delete BtWorld;
-	delete BtConstraintSolver;
-	delete BtBroadphase;
-	delete BtCollisionDispatcher;
-	delete BtCollisionConfig;
-	delete BtDebugDraw; // I haven't talked about this yet, later
-
-	BtWorld = nullptr;
-	BtConstraintSolver = nullptr;
-	BtBroadphase = nullptr;
-	BtCollisionDispatcher = nullptr;
-	BtCollisionConfig = nullptr;
-	BtDebugDraw = nullptr;
-
-	// Clear our type-specific arrays (duplicate refs)
-	BtStaticObjects.Empty();
-	BtRigidBodies.Empty();*/
 }
 
 // Called every frame
@@ -160,12 +61,8 @@ void APhysicsWorldActor::Tick(float DeltaTime)
 	if (bPhysicsShowDebug)
 	{
 		GGPOGameStateBase->gs.Bullet.BtWorld->debugDrawWorld();
-		//BtDebugDraw->drawLine(btVector3(0.0, 0.0, 0.0), btVector3(100.0f, 100.0f, 100.0f), btVector3(255,0,0));
-
-		//DrawDebugSphere(GetWorld(), BulletHelpers::ToUEPos(BtRigidBodies.Last()->getWorldTransform().getOrigin(), GetActorLocation()), 50.0f, 4, FColor::Red, false, 1, 0, 2);
 	}
 #endif
-	//B StepPhysics(DeltaTime);
 }
 
 void APhysicsWorldActor::UpdatePlayerPhysics(APlayerPawn* Pawn)
@@ -176,42 +73,11 @@ void APhysicsWorldActor::UpdatePlayerPhysics(APlayerPawn* Pawn)
 	{
 		if(Pawn == Body->getUserPointer())
 		{
-			/*Body->setCollisionFlags(Body->getCollisionFlags() | btCollisionObject::CF_KINEMATIC_OBJECT);
-			Body->setActivationState(DISABLE_DEACTIVATION);*/
-			//Body->applyCentralImpulse(BulletHelpers::ToBtDir(InputVec * 10.f, false));
 			Body->setLinearVelocity(BulletHelpers::ToBtDir(InputVec * 10.f, false));
 			if(GEngine)
 				GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Yellow, TEXT("applied force to player"));
 		}
 	}
-	
-}
-
-void APhysicsWorldActor::StepPhysics(float DeltaSeconds)
-{
-	//B
-	/*//D stepSimulation() returns number of simulation sub steps. I'll need to do this externally in ggpo
-	TimeStepAccumulator += DeltaSeconds;
-	//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Emerald, FString::Printf(TEXT("AccuTime: %f || DeltaTime = %f"), TimeStepAccumulator, DeltaSeconds));
-	int steps = 0;
-	while(TimeStepAccumulator >= BtPhysicsTimeStep)
-	{
-		BtWorld->stepSimulation(BtPhysicsTimeStep, BtMaxSubSteps, BtPhysicsTimeStep);
-		TimeStepAccumulator -= BtPhysicsTimeStep;
-		steps++;
-	}*/
-	//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Emerald, FString::Printf(TEXT("Num Steps: %d"), steps));
-
-//B
-/*#if WITH_EDITORONLY_DATA
-	if (bPhysicsShowDebug)
-	{
-		GGPOGameStateBase->GetGameState().Bullet.BtWorld->debugDrawWorld();
-		//BtDebugDraw->drawLine(btVector3(0.0, 0.0, 0.0), btVector3(100.0f, 100.0f, 100.0f), btVector3(255,0,0));
-
-		//DrawDebugSphere(GetWorld(), BulletHelpers::ToUEPos(BtRigidBodies.Last()->getWorldTransform().getOrigin(), GetActorLocation()), 50.0f, 4, FColor::Red, false, 1, 0, 2);
-	}
-#endif*/
 	
 }
 
@@ -230,7 +96,6 @@ void APhysicsWorldActor::SetupStaticGeometryPhysics(TArray<AActor*> Actors, floa
 				const FTransform FinalXform = RelTransform * Actor->GetActorTransform();
 				AddStaticCollision(Shape, FinalXform, Friction, Restitution, Actor);
 			});
-		//UE_LOG(LogTemp, Warning, TEXT("Static Actor: %s was added. Shape is %hs"), *Actor->GetName(), BtStaticObjects.Last()->getCollisionShape()->getName());
 	}
 }
 
@@ -238,26 +103,11 @@ void APhysicsWorldActor::SetupInitialDynamicPhysics(TArray<AActor*> Actors)
 {
 	for (AActor* Actor : Actors)
 	{
-		// Just in case we remove items from the list & leave blank
+		// Just in case we remove items from the list & leave them blank
 		if (Actor == nullptr)
 			continue;
 		
-		const UPrimitiveComponent* Component = Actor->FindComponentByClass<UPrimitiveComponent>();
-		if(Component != nullptr)
-		{
-			/*AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, Component->GetMass()));
-			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Actor->GetName(), Component->GetMass(), *Component->GetName());*/
-			
-			//D Using default mass for now, to avoid warning message
-			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, 100.f));
-			UE_LOG(LogTemp, Warning, TEXT("Actor: %s has a mass of %f from %s"), *Actor->GetName(), 100.f, *Component->GetName());
-		
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("Actor: %s has no UPrimitiveComponent, using default mass of 100"), *Actor->GetName());
-			AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, 100.f));
-		}
+		AddRigidBody(Actor, GetCachedDynamicShapeData(Actor, 200.f));
 		UE_LOG(LogTemp, Warning, TEXT("Initial Dynamic Actor: %s was added"), *Actor->GetName());
 	}
 	
@@ -288,14 +138,6 @@ btRigidBody* APhysicsWorldActor::AddPhysicsPlayer(APlayerPawn* Pawn)
 		if(CapsuleData.ClassName == FName())
 		{
 			btCollisionShape* Shape = GetCapsuleCollisionShape(Capsule->GetScaledCapsuleRadius(), Capsule->GetScaledCapsuleHalfHeight()-2.f);
-			/*// Capsules are in Z in UE, in Y in Bullet, so roll -90
-			FRotator Rot(0, 0, 0); // Rot(0, 0, -90)
-			// Also apply any local rotation
-			Rot += Capsule->GetRelativeRotation();
-			FTransform ShapeXform(Rot, Capsule->GetRelativeLocation());
-			// Shape transform adds to any relative transform already here
-			FTransform XForm = ShapeXform * (Capsule->GetComponentTransform() * Pawn->GetActorTransform().Inverse());*/
-
 			//D Player capsule shape data
 			CapsuleData.ClassName = Pawn->GetClass()->GetFName();
 			CapsuleData.Shape = Shape;
@@ -367,15 +209,6 @@ void APhysicsWorldActor::ExtractPhysicsGeometry(UStaticMeshComponent* SMC, const
 		CompFullRelXForm.SetScale3D(SMC->GetComponentScale());//D re-scale it
 		ExtractPhysicsGeometry(CompFullRelXForm, Mesh->GetBodySetup(), CB);
 	}
-	
-
-	// Not supporting complex collision shapes right now
-	// If we did, note that Mesh->ComplexCollisionMesh is WITH_EDITORONLY_DATA so not available at runtime
-	// See StaticMeshRender.cpp, FStaticMeshSceneProxy::GetDynamicMeshElements
-	// Line 1417+, bDrawComplexCollision
-	// Looks like we have to access LODForCollision, RenderData->LODResources
-	// So they use a mesh LOD for collision for complex shapes, never drawn usually?
-
 }
 
 void APhysicsWorldActor::ExtractPhysicsGeometry(UShapeComponent* Sc, const FTransform& InvActorXform, PhysicsGeometryCallback CB)
@@ -419,11 +252,6 @@ void APhysicsWorldActor::ExtractPhysicsGeometry(const FTransform& XformSoFar, UB
 	{
 		// X scales radius, Z scales height
 		Shape = GetCapsuleCollisionShape(Capsule.Radius * Scale.X, Capsule.Length * Scale.Z);
-		// Capsules are in Z in UE, in Y in Bullet, so roll -90
-		//D ^ nevermind this, changed it to fix that elswhere using btCapsuleShapeZ
-		// FRotator Rot(0, 0, -90);
-		// // Also apply any local rotation
-		// Rot += Capsule.Rotation;
 		FTransform ShapeXform(Capsule.Rotation, Capsule.Center); //D was (Rot, Capsule.center)
 		// Shape transform adds to any relative transform already here
 		FTransform XForm = ShapeXform * XformSoFar;

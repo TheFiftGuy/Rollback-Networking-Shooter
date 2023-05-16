@@ -11,7 +11,10 @@
 class APlayerPawn;
 class btDiscreteDynamicsWorld;
 
-//Contains All bulletphysics data
+//The Setup and general structure of Bullet in Unreal is done according to this source :
+//https://www.stevestreeting.com/2020/07/26/using-bullet-for-physics-in-ue4/
+
+//Contains All bulletphysics data/pointers
 struct BulletPhysics	{
 	
 	// Global objects
@@ -55,11 +58,6 @@ struct BulletPhysics	{
 struct GameState
 {
 public:
-	//PhysWorldActor
-	//Player Pawn
-	//Player Controller?
-	//Other Bullet Stuff?
-
 	void Init(int NumPlayers_);
 	void GetPlayerAI(int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
 	void ParsePlayerInputs(int Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire);
@@ -71,12 +69,13 @@ public:
 	int LoadBtBodyData();
 	//pre-simulate save data
 	int SaveBtBodyData();
-
+	
+	BulletPhysics Bullet;
+	//Contains serialized btbodydata. First PlayerBodiesData, then rigidbodiesData
+	TArray<btRigidBodyFloatData> BtBodyData;
+	
 	int FrameNumber = 0;
 	int NumPlayers = 1;
-	BulletPhysics Bullet;
-	//Contains PlayerBodiesData, then rest of bodiesData
-	TArray<btRigidBodyFloatData> BtBodyData;
 	int FireCooldown[4] = {0};
 	int PlayerHitsReceived[4] = {0};
 	int PlayerHitsDealt[4] = {0};

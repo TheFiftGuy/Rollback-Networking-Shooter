@@ -4,13 +4,10 @@
 #include "GameState.h"
 #include "NonGameState.h"
 
+//Interface class/header holder for the non UE gamestate stuff
+
+//Enable singleplayer sync test using this:
 //#define SYNC_TEST = true;
-/*
- * GGPOGame.h --
- *
- * Interface to the internal non-unreal GGPOGame layer.
- *
- */
 
 enum BulletInputs {
 	INPUT_FORWARDS   = (1 << 0),

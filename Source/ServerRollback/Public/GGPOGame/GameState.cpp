@@ -102,8 +102,6 @@ void GameState::Update(int inputs[], int disconnect_flags)
 		
 		ApplyInputToPlayer(i, PlayerMovement, MouseDelta, Fire);
 	}
-	
-	
 	Bullet.BtWorld->stepSimulation(btScalar(1.) / btScalar(60.), 0);
 }
 
@@ -126,8 +124,6 @@ void GameState::OnDestroy()
 			}
 		}
 	}
-	
-	
 	// delete collision shapes
 	for (int i = 0; i < Bullet.BtBoxCollisionShapes.Num(); i++)
 		delete Bullet.BtBoxCollisionShapes[i];
@@ -177,13 +173,8 @@ void GameState::InitBullet()
 	Bullet.BtBroadphase = new btDbvtBroadphase ();
 	Bullet.BtConstraintSolver = new btSequentialImpulseConstraintSolver();
 	Bullet.BtWorld = new btDiscreteDynamicsWorld (Bullet.BtCollisionDispatcher, Bullet.BtBroadphase, Bullet.BtConstraintSolver, Bullet.BtCollisionConfig);
-
-	// I mess with a few settings on BtWorld->getSolverInfo() but they're specific to my needs	
-
 	// Gravity vector in our units (1=1cm)
 	Bullet.BtWorld->setGravity(BulletHelpers::ToBtDir(FVector(0, 0, -980)));
-
-	
 }
 
 void GameState::PlayerMove(int PlayerIndex, FVector PlayerMovement)
@@ -194,8 +185,7 @@ void GameState::PlayerMove(int PlayerIndex, FVector PlayerMovement)
 	BtMovement = (Bullet.BtPlayerBodies[PlayerIndex]->getWorldTransform().getBasis() * BtMovement) *600;
 
 	
-	if(BtMovement.getZ() > KINDA_SMALL_NUMBER)
-	{
+	if(BtMovement.getZ() > KINDA_SMALL_NUMBER)	{
 		//is grounded
 		btVector3 From = Bullet.BtPlayerBodies[PlayerIndex]->getWorldTransform().getOrigin();
 		btVector3 Offset = btVector3(0.f, 0.f, - (0.96 + 0.25));
@@ -225,18 +215,14 @@ void GameState::PlayerMove(int PlayerIndex, FVector PlayerMovement)
 
 void GameState::PlayerTurn(int PlayerIndex, FVector2D MouseDelta)
 {
-	if(APlayerPawn* Pawn = (APlayerPawn*)Bullet.BtPlayerBodies[PlayerIndex]->getUserPointer())
-	{
+	if(APlayerPawn* Pawn = (APlayerPawn*)Bullet.BtPlayerBodies[PlayerIndex]->getUserPointer())	{
 		//turn camera vert/horiz
 		FRotator yaw = FRotator(0,MouseDelta.X, 0);
 		Pawn->AddActorLocalRotation(yaw);
 		FRotator pitch = FRotator(MouseDelta.Y, 0, 0);
 		Pawn->Camera.Get()->AddRelativeRotation(pitch);
-
-		//Pawn->SetActorRotation(rot);
-		/*Pawn->AddControllerYawInput(MouseDelta.X);
-		Pawn->AddControllerPitchInput(MouseDelta.Y);*/
-		//turn BtBody around the UE5 Z axis
+		
+		//turn BtBody around the UE5 Z axis (so left<->right rotation)
 		btQuaternion BodyRot = BulletHelpers::ToBt(FRotator(0, Pawn->GetActorRotation().Yaw, 0));
 		Bullet.BtPlayerBodies[PlayerIndex]->getWorldTransform().setRotation(BodyRot);//unsure if this way or motionState() way is deterministic.
 	}
@@ -244,8 +230,7 @@ void GameState::PlayerTurn(int PlayerIndex, FVector2D MouseDelta)
 
 void GameState::PlayerFire(int PlayerIndex)
 {
-	if(APlayerPawn* Shooter = (APlayerPawn*)Bullet.BtPlayerBodies[PlayerIndex]->getUserPointer())
-	{
+	if(APlayerPawn* Shooter = (APlayerPawn*)Bullet.BtPlayerBodies[PlayerIndex]->getUserPointer())	{
 		btVector3 From = Bullet.BtPlayerBodies[PlayerIndex]->getWorldTransform().getOrigin();
 		
 		btVector3 Offset = BulletHelpers::ToBtPos(Shooter->Camera->GetRelativeLocation(), FVector(0));
@@ -260,17 +245,13 @@ void GameState::PlayerFire(int PlayerIndex)
 		//GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Green, TEXT("Player Fired"));
 		DrawDebugLine(Shooter->GetWorld(), BulletHelpers::ToUEPos(From, FVector(0)), BulletHelpers::ToUEPos(To,FVector(0)),FColor::Green, false, 1.f, 0, 1);
 		
-		if(rayCallback.hasHit())
-		{
+		if(rayCallback.hasHit())	{
 			//Has to be cast this way. Unreal doesn't like turning dumb void* into Unreal UObject*.
-			if(APlayerPawn* HitPlayer = (APlayerPawn*)rayCallback.m_collisionObject->getUserPointer())
-			{
-				if (HitPlayer->IsA(APlayerPawn::StaticClass()))
-				{
+			if(APlayerPawn* HitPlayer = (APlayerPawn*)rayCallback.m_collisionObject->getUserPointer())	{
+				if (HitPlayer->IsA(APlayerPawn::StaticClass()))	{
 					//we hit someone
 					PlayerHitsDealt[PlayerIndex]++;
-					for(int i = 0; i < NumPlayers; i++)
-					{
+					for(int i = 0; i < NumPlayers; i++)	{
 						//we cant shoot ourself
 						if(i == PlayerIndex)
 							continue;
@@ -308,7 +289,6 @@ int GameState::LoadBtBodyData()
 		UE_LOG(LogTemp, Error, TEXT("LoadBtBodyData Error: Expected %d Bodies but have Data for %d bodies stored"), TotalBodies, BtBodyData.Num());
 		return 0;
 	}
-
 	return BtBodyData.Num();
 }
 
@@ -325,11 +305,6 @@ int GameState::SaveBtBodyData()
 		{
 			btRigidBodyFloatData Data;
 			Bullet.BtPlayerBodies[i]->serialize(&Data,Serializer);
-			/*Bullet.BtPlayerBodies[0]->getInvInertiaTensorWorld().serializeFloat(Data.m_invInertiaTensorWorld);
-			Bullet.BtPlayerBodies[0]->getLinearVelocity().serializeFloat(Data.m_linearVelocity);
-			Bullet.BtPlayerBodies[0]->getAngularVelocity().serializeFloat(Data.m_angularVelocity);
-			Bullet.BtPlayerBodies[0]->getAngularFactor().serializeFloat(Data.m_angularFactor);*/
-
 			BtBodyData.Add(Data);
 		}
 		for(int i = 0; i < Bullet.BtRigidBodies.Num(); i++)
@@ -350,7 +325,6 @@ int GameState::SaveBtBodyData()
 			else	{
 				Bullet.BtRigidBodies[i - Bullet.BtPlayerBodies.Num()]->serialize(&Data,Serializer);
 			}
-			
 			BtBodyData[i] = Data;
 		}
 	}
@@ -369,20 +343,8 @@ void GameState::DeSerializeBtBodyData(btRigidBody* OutBody, const btRigidBodyFlo
 	btVector3 vec3 = btVector3(); //used to convert data to usable vector
 	
 	//m_collisionObjectData section
-	//OutBody->setBroadphaseHandle((btBroadphaseProxy*) InData.m_collisionObjectData.m_broadphaseHandle);
-	//OutBody->setCollisionShape((btCollisionShape*) InData.m_collisionObjectData.m_collisionShape);
-
-	//OutBody->setWorldTransform(transform);
-	
-	/*transform.deSerializeFloat(InData.m_collisionObjectData.m_interpolationWorldTransform);
-	OutBody->setInterpolationWorldTransform(transform);
-	vec3.deSerializeFloat(InData.m_collisionObjectData.m_interpolationLinearVelocity);
-	OutBody->setInterpolationLinearVelocity(vec3);
-	vec3.deSerializeFloat(InData.m_collisionObjectData.m_interpolationAngularVelocity);
-	OutBody->setInterpolationAngularVelocity(vec3);*/
 	vec3.deSerializeFloat(InData.m_collisionObjectData.m_anisotropicFriction);
 	OutBody->setAnisotropicFriction(vec3, InData.m_collisionObjectData.m_hasAnisotropicFriction);
-
 	OutBody->setContactProcessingThreshold(InData.m_collisionObjectData.m_contactProcessingThreshold);
 	OutBody->setDeactivationTime(InData.m_collisionObjectData.m_deactivationTime);
 	OutBody->setFriction(InData.m_collisionObjectData.m_friction);
@@ -406,17 +368,11 @@ void GameState::DeSerializeBtBodyData(btRigidBody* OutBody, const btRigidBodyFlo
 	OutBody->setAngularFactor(vec3);
 	vec3.deSerializeFloat(InData.m_linearFactor);
 	OutBody->setLinearFactor(vec3);
-	/*vec3.deSerializeFloat(InData.m_gravity);
-	OutBody->setGravity(vec3);//this also sets Grav_accel*/
-	/*vec3.deSerializeFloat(InData.m_invInertiaLocal);
-	OutBody->setInvInertiaDiagLocal(vec3);*/
-	
 	OutBody->setDamping(InData.m_linearDamping, InData.m_angularDamping);
 	OutBody->setSleepingThresholds(InData.m_linearSleepingThreshold, InData.m_angularSleepingThreshold);
-	//OutBody->updateInertiaTensor();
 
+	//doing world transform last seems to fix some determinism problems (as it calls other interal functions that uses other bullet data)
 	transform.deSerializeFloat(InData.m_collisionObjectData.m_worldTransform);
 	OutBody->setCenterOfMassTransform(transform);
-
 }
 

@@ -11,6 +11,10 @@
  * 
  */
 
+//General Class structure and usage of GGPO is based of the GGPO UE4 port plugin & Demo game example
+//Plugin: https://github.com/BwdYeti/GGPOUE4
+//game: https://github.com/BwdYeti/VectorWarUE4
+
 UCLASS()
 class SERVERROLLBACK_API AGGPOGameStateBase : public AGameStateBase
 {
@@ -87,9 +91,9 @@ private:
 	bool TryStartGGPOPlayerSession(int32 NumPlayers, const UGGPONetwork* NetworkAddresses);
 	
 	//D This was:
-	/* VectorWar_Init --
+	/* ggpo game init --
 	 *
-	 * Initialize the vector war game.  This initializes the game state and
+	 * Initialize the external game.  This initializes the game state and
 	 * creates a new network session.
 	 */
 	void Game_Init(uint16 localport, int32 num_players, GGPOPlayer* players, int32 num_spectators);
