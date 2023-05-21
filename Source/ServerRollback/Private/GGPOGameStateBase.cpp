@@ -316,9 +316,13 @@ void AGGPOGameStateBase::UELogGameState(const int32 inputs[])
 {
 	UE_LOG(GGPOlog, Log, TEXT("---------------LOG START ----------------------"));
 	UE_LOG(GGPOlog, Log, TEXT("Frame# %d\t Players: %d.\t LOCALPLAYER: %d\tPLAYER LOGS BELOW."), gs.FrameNumber, gs.NumPlayers, LocalPlayerIndex);
+	
 	for(int i = 0; i < gs.NumPlayers; i++)	{
 		UE_LOG(GGPOlog, Log, TEXT("Player START-------------------------"));
-		UE_LOG(GGPOlog, Log, TEXT("PLAYER %d INFO\tHP: %d\t Hits:%d\t INPUT: %d"), i+1, GetPlayerHP(i), GetPlayerHits(i), inputs[i]);
+		UE_LOG(GGPOlog, Log, TEXT("PLAYER %d INFO\tHP: %d\t Hits:%d\t INPUT: %d"), i, GetPlayerHP(i), GetPlayerHits(i), inputs[i]);
+		FVector MoveInput; FVector2D MouseDelta; bool FireInput;
+		gs.ParsePlayerInputs(inputs[i], i, &MoveInput,&MouseDelta, &FireInput);
+		UE_LOG(GGPOlog, Log, TEXT("INPUT:\t%s\t%s\tFire: %d"), *MoveInput.ToString(), *MouseDelta.ToString(), FireInput);
 		btRigidBody* player = gs.Bullet.BtPlayerBodies[i];
 		FString s1 = FString::SanitizeFloat(player->getWorldTransform().getOrigin().getX(), 5);
 		FString s2 = FString::SanitizeFloat(player->getWorldTransform().getOrigin().getY(), 5);

@@ -10,6 +10,9 @@
 void GameState::Init(int NumPlayers_)
 {
 	NumPlayers = NumPlayers_;
+	FrameNumber = 0;
+	UE_LOG(LogTemp, Log, TEXT("GameState::Init Player Quantity = %d"), NumPlayers);
+
 	InitBullet();
 }
 
@@ -22,7 +25,7 @@ void GameState::GetPlayerAI(int PlayerIndex, FVector* outPlayerMovement, FVector
 	*outFire = false;
 }
 
-void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
+void GameState::ParsePlayerInputs(int Inputs, int PlayerIndex, FVector* outPlayerMovement, FVector2D* outMouseDelta, bool* outFire)
 {
 	bool Forwards = Inputs & INPUT_FORWARDS;
 	bool Backwards = Inputs & INPUT_BACKWARDS;
@@ -56,8 +59,8 @@ void GameState::ParsePlayerInputs(int32 Inputs, int PlayerIndex, FVector* outPla
 	}
 	outPlayerMovement->Z = ((Inputs & INPUT_JUMP) ? 1 : 0);
 
-	int32 MouseDeltaX = ((Inputs >> 6) & 0x1FFF);
-	int32 MouseDeltaY = ((Inputs >> 19) & 0x1FFF);
+	int MouseDeltaX = ((Inputs >> 6) & 0x1FFF);
+	int MouseDeltaY = ((Inputs >> 19) & 0x1FFF);
 	MouseDeltaX |= ((MouseDeltaX & 0x1000) ? 0xFFFFE000 : 0);
 	MouseDeltaY |= ((MouseDeltaY & 0x1000) ? 0xFFFFE000 : 0);
 	
@@ -87,12 +90,11 @@ void GameState::ApplyInputToPlayer(int PlayerIndex, FVector inPlayerMovement, FV
 void GameState::Update(int inputs[], int disconnect_flags)
 {	
 	FrameNumber++;
-	//refresh Bullet sim with body data
-	
+	FVector PlayerMovement;	FVector2D MouseDelta; bool Fire;
 	for (int i = 0; i < NumPlayers; i++) {
-		FVector PlayerMovement = FVector();
-		FVector2D MouseDelta = FVector2D();
-		bool Fire = false;
+		PlayerMovement = FVector(0.0);
+		MouseDelta = FVector2D(0.0);
+		Fire = false;
 
 		if (disconnect_flags & (1 << i)) {
 			GetPlayerAI(i, &PlayerMovement, &MouseDelta, &Fire);
@@ -220,7 +222,12 @@ void GameState::PlayerTurn(int PlayerIndex, FVector2D MouseDelta)
 		FRotator yaw = FRotator(0,MouseDelta.X, 0);
 		Pawn->AddActorLocalRotation(yaw);
 		FRotator pitch = FRotator(MouseDelta.Y, 0, 0);
-		Pawn->Camera.Get()->AddRelativeRotation(pitch);
+		//dont apply Rotation if it hits the Max/min pitch
+		if((Pawn->Camera.Get()->GetRelativeRotation().Pitch + MouseDelta.Y) >= 89 ||(Pawn->Camera.Get()->GetRelativeRotation().Pitch + MouseDelta.Y) <= -89)	{}
+		else
+		{
+			Pawn->Camera.Get()->AddRelativeRotation(pitch);
+		}
 		
 		//turn BtBody around the UE5 Z axis (so left<->right rotation)
 		btQuaternion BodyRot = BulletHelpers::ToBt(FRotator(0, Pawn->GetActorRotation().Yaw, 0));

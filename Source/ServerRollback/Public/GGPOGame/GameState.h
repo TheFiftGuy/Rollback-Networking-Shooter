@@ -74,8 +74,8 @@ public:
 	//Contains serialized btbodydata. First PlayerBodiesData, then rigidbodiesData
 	TArray<btRigidBodyFloatData> BtBodyData;
 	
-	int FrameNumber = 0;
-	int NumPlayers = 1;
+	int FrameNumber;
+	int NumPlayers;
 	int FireCooldown[4] = {0};
 	int PlayerHitsReceived[4] = {0};
 	int PlayerHitsDealt[4] = {0};

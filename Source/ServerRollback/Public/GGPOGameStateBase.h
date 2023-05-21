@@ -76,7 +76,7 @@ private:
 	void ggpoGame_RunFrame(int32 local_input);
 	/*
 	 * Advances the game state by exactly 1 frame using the inputs specified
-	 * for player 1 and player 2.
+	 * for all players.
 	 */
 	void ggpoGame_AdvanceFrame(int32 inputs[], int32 disconnect_flags);
 	/*
